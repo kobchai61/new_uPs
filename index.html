@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="เตรียมสอบปลายภาค EN813202: สรุป GPIO, UART, ADC, Interrupt บน STM32 (CMSIS + อ่านโค้ด HAL) พร้อมข้อสอบจำลอง 70 ข้อ 140 คะแนน">
+<meta name="description" content="เตรียมสอบปลายภาค EN813202: สรุป GPIO, UART, ADC, Interrupt บน STM32 (CMSIS + HAL Library) พร้อมข้อสอบจำลอง 70 ข้อ 140 คะแนน">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>EN813202 Final Prep</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -242,14 +242,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding-block:20px 40px;color:var(--m
 </head>
 <body>
 <header class="mast">
-  <div class="eyebrow"><span class="label">EN813202 Microprocessors and Interfacing · ปลายภาค ภาคต้น 2569 · STM32 · CMSIS + อ่านโค้ด HAL</span></div>
-  <h1>เตรียมสอบ GPIO · UART · ADC · Interrupt<span class="sub">สรุปเนื้อหาแบบ CMSIS ที่เรียนมา พร้อมตารางแปลโค้ด HAL และข้อสอบจำลอง 70 ข้อ 140 คะแนน</span></h1>
-  <p class="lede">อาจารย์ยืนยันว่าข้อสอบ<b>ไม่ให้เขียนโค้ด</b> แต่จะมีโค้ดให้อ่านแล้วเข้าใจการทำงาน เนื้อหาหน้านี้จึงยึด CMSIS (register-level) ตามสไลด์ Chapter 1 และ 3 ที่เรียนมาเป็นหลัก ส่วนหัวข้อ “อ่านโค้ด HAL ให้ออก” มีไว้แปลชื่อฟังก์ชัน HAL เป็น register ที่รู้จักเผื่อโจทย์ใช้ HAL ไม่ต้องท่องจำ ส่วน ADC และ Interrupt เรียบเรียงจาก Reference Manual RM0383 ถ้าอาจารย์ใช้สัญลักษณ์ต่างไป ให้ยึดตามที่สอน</p>
+  <div class="eyebrow"><span class="label">EN813202 Microprocessors and Interfacing · ปลายภาค ภาคต้น 2569 · STM32 · CMSIS + HAL Library</span></div>
+  <h1>เตรียมสอบ GPIO · UART · ADC · Interrupt<span class="sub">สรุปเนื้อหาแบบ CMSIS ที่เรียนมา ฟังก์ชัน HAL ที่ต้องเข้าใจ และข้อสอบจำลอง 70 ข้อ 140 คะแนน</span></h1>
+  <p class="lede">อาจารย์ยืนยันว่าข้อสอบ<b>ไม่ให้เขียนโค้ด</b> แต่จะมีโค้ดให้อ่านแล้วเข้าใจการทำงาน เนื้อหาหน้านี้จึงยึด CMSIS (register-level) ตามสไลด์ Chapter 1 และ 3 ที่เรียนมาเป็นหลัก และอาจารย์ย้ำเพิ่มว่า<b>ต้องเข้าใจฟังก์ชันของ HAL Library ด้วย</b> แบบคนที่ทำมินิโปรเจกต์เองได้ จึงมีบท “HAL Library ที่ต้องเข้าใจ” แยกไว้ และในแต่ละบทมีตารางเทียบ HAL กับ register ส่วน ADC และ Interrupt เรียบเรียงจาก Reference Manual RM0383 ถ้าอาจารย์ใช้สัญลักษณ์ต่างไป ให้ยึดตามที่สอน</p>
   <nav class="chans" aria-label="หัวข้อ">
     <a class="chan c-gpio" href="#gpio"><i>1</i>GPIO · 15 ข้อ</a>
     <a class="chan c-uart" href="#uart"><i>2</i>UART · 20 ข้อ</a>
     <a class="chan c-adc" href="#adc"><i>3</i>ADC · 20 ข้อ</a>
     <a class="chan c-int" href="#int"><i>4</i>Interrupt · 15 ข้อ</a>
+    <a class="chan c-sys" href="#hal"><i>5</i>HAL Library</a>
     <a class="chan" href="#exam" style="--c:var(--accent)"><i>70</i>ข้อสอบจำลอง</a>
   </nav>
 </header>
@@ -264,6 +265,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding-block:20px 40px;color:var(--m
     <li><a href="#adc" style="--c:var(--adc)"><b></b>3 · ADC</a></li>
     <li><a href="#int" style="--c:var(--int)"><b></b>4 · Interrupt</a></li>
     <li><a href="#sys" style="--c:var(--int)"><b></b>4.7 · ออกแบบระบบรวม</a></li>
+    <li><a href="#hal" style="--c:var(--sys)"><b></b>5 · HAL Library ที่ต้องเข้าใจ</a></li>
     <li><a href="#cheat"><b></b>คิดเลขโดยไม่ใช้เครื่องคิดเลข</a></li>
     <li><a href="#exam" style="--c:var(--accent)"><b></b>ข้อสอบจำลอง 70 ข้อ</a></li>
   </ol>
@@ -276,7 +278,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding-block:20px 40px;color:var(--m
   <div class="topic-head">
     <span class="label">ก่อนเริ่ม</span>
     <h2>รูปแบบข้อสอบและวิธีเขียนเหตุผลให้ได้คะแนน</h2>
-    <p>ข้อสอบมี 70 ข้อ ข้อละ 2 คะแนน รวม 140 คะแนน ต้องตอบถูก<b>และ</b>เขียนเหตุผลถูก ถ้าไม่มีเหตุผลหรือเหตุผลผิดมากจะไม่ได้คะแนน ห้ามนำเอกสารหรือเครื่องคิดเลขเข้าห้องสอบ และ<b>ไม่ได้ให้เขียนโค้ด</b> แต่มีโค้ดให้อ่านว่าทำงานอย่างไร</p>
+    <p>ข้อสอบมี 70 ข้อ ข้อละ 2 คะแนน รวม 140 คะแนน ต้องตอบถูก<b>และ</b>เขียนเหตุผลถูก ถ้าไม่มีเหตุผลหรือเหตุผลผิดมากจะไม่ได้คะแนน ห้ามนำเอกสารหรือเครื่องคิดเลขเข้าห้องสอบ และ<b>ไม่ได้ให้เขียนโค้ด</b> แต่มีโค้ดให้อ่านว่าทำงานอย่างไร ทั้งแบบ CMSIS และ<b>ฟังก์ชันของ HAL ซึ่งต้องเข้าใจพฤติกรรม</b></p>
   </div>
 
   <div class="two">
@@ -364,8 +366,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding-block:20px 40px;color:var(--m
   </div>
 
   <div class="block">
-    <h3>1.2 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
-    <p>ไม่ต้องท่อง ใช้เป็นพจนานุกรม: ถ้าโจทย์ให้โค้ด HAL ให้แปลแต่ละบรรทัดเป็น register ที่เรียนมาตามตารางนี้ แล้ววิเคราะห์แบบเดิม</p>
+    <h3>1.2 GPIO ด้วย HAL (เทียบกับ CMSIS)</h3>
+    <p>ตารางนี้เทียบฟังก์ชัน HAL กับ register ที่เรียนมา พฤติกรรมของแต่ละฟังก์ชันอยู่ในบทที่ 5</p>
     <div class="two">
       <pre><span class="c">/* MX_GPIO_Init() ที่ CubeMX สร้าง (ย่อ) */</span>
 __HAL_RCC_GPIOA_CLK_ENABLE();          <span class="c">// clock ก่อนเสมอ</span>
@@ -641,7 +643,7 @@ USART2->CR1 |=  USART_CR1_TE | USART_CR1_RE;</pre>
   </div>
 
   <div class="block">
-    <h3>2.9 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <h3>2.9 UART ด้วย HAL (เทียบกับ CMSIS)</h3>
     <p>HAL_UART_Transmit คือการวนรอ TXE แล้วเขียน DR ทีละไบต์แบบ Lab 3.2 ส่วนฟังก์ชันที่ลงท้าย _IT ใช้ TXEIE/RXNEIE และ _DMA ใช้ DMA ทำแทน CPU</p>
     <div class="two">
       <pre>huart2.Instance          = USART2;
@@ -744,7 +746,7 @@ HAL_UART_Receive_IT(&huart2, &rx, 1);
   </div>
 
   <div class="block">
-    <h3>3.3 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <h3>3.3 ADC ด้วย HAL (เทียบกับ CMSIS)</h3>
     <p>HAL_ADC_Start = ตั้ง SWSTART · HAL_ADC_PollForConversion = วนรอ EOC · HAL_ADC_GetValue = อ่าน DR ส่วนค่าใน hadc1.Init แต่ละบรรทัดแปลเป็นบิตใน CR1/CR2 ตามตาราง</p>
     <div class="two">
       <pre>hadc1.Instance                   = ADC1;
@@ -972,7 +974,7 @@ NVIC_EnableIRQ(EXTI15_10_IRQn);
   </div>
 
   <div class="block">
-    <h3>4.6 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <h3>4.6 Interrupt ด้วย HAL (เทียบกับ CMSIS)</h3>
     <p>HAL ซ่อน ISR ไว้ใน <code>stm32f4xx_it.c</code> และเรียก <b>callback</b> ที่เราเขียน callback ทุกตัวจึง<b>ทำงานในบริบท interrupt</b> ต้องสั้น ไม่ block</p>
     <div class="tbl"><table>
       <thead><tr><th>เหตุการณ์</th><th>ISR (vector)</th><th>HAL handler</th><th>Callback ที่เราเขียน</th></tr></thead>
@@ -1064,6 +1066,178 @@ HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);</pre>
   </div>
 </section>
 
+<!-- ================= HAL ================= -->
+<section class="topic" id="hal" style="--c:var(--sys)">
+  <div class="topic-head">
+    <span class="label">5 · ต้องเข้าใจ แม้ไม่ต้องเขียน</span>
+    <h2>HAL Library ที่ต้องเข้าใจ</h2>
+    <p>อาจารย์ย้ำว่าไม่ได้ให้เขียนโค้ด แต่ต้องเข้าใจฟังก์ชันของ HAL แบบคนที่ทำมินิโปรเจกต์เองได้ ชื่อฟังก์ชันบอกว่ามันทำอะไรอยู่แล้ว สิ่งที่ข้อสอบมักวัดคือ<b>พฤติกรรม</b>: ฟังก์ชันรอจนเสร็จหรือคืนค่าทันที คืนค่าอะไร เรียก callback ตัวไหน callback ทำงานในบริบทไหน และต้องเรียกซ้ำหรือไม่</p>
+  </div>
+
+  <div class="block">
+    <h3>5.1 หลักการอ่านชื่อฟังก์ชัน HAL</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>รูปแบบชื่อ</th><th>ความหมาย</th><th>ตัวอย่าง</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">HAL_&lt;PPP&gt;_&lt;Action&gt;</td><td><b>Blocking</b>: วนรอจนเสร็จหรือหมดเวลา (มี Timeout) แล้วค่อยคืนค่า</td><td class="mono">HAL_UART_Transmit, HAL_ADC_PollForConversion</td></tr>
+        <tr><td class="mono">…_IT</td><td><b>Non-blocking ด้วย interrupt</b>: เปิด interrupt แล้วคืนค่าทันที เมื่อเสร็จ HAL เรียก callback</td><td class="mono">HAL_UART_Receive_IT, HAL_ADC_Start_IT</td></tr>
+        <tr><td class="mono">…_DMA</td><td><b>Non-blocking ด้วย DMA</b>: DMA ย้ายข้อมูลแทน CPU มี callback ครึ่งทาง (HalfCplt) และเสร็จ (Cplt)</td><td class="mono">HAL_UART_Transmit_DMA, HAL_ADC_Start_DMA</td></tr>
+        <tr><td class="mono">HAL_&lt;PPP&gt;_IRQHandler</td><td>ตัวจัดการ interrupt ของ HAL ถูกเรียกจาก ISR ใน stm32f4xx_it.c ตรวจ flag ล้าง flag แล้วเรียก callback</td><td class="mono">HAL_UART_IRQHandler, HAL_GPIO_EXTI_IRQHandler</td></tr>
+        <tr><td class="mono">HAL_&lt;PPP&gt;_…Callback</td><td>ฟังก์ชัน <code>__weak</code> ที่เรา override เอง <b>ทำงานในบริบท interrupt</b> ต้องสั้น</td><td class="mono">HAL_UART_RxCpltCallback, HAL_GPIO_EXTI_Callback</td></tr>
+        <tr><td class="mono">HAL_&lt;PPP&gt;_MspInit</td><td>ส่วนตั้งค่าระดับล่างที่ HAL_&lt;PPP&gt;_Init เรียก: เปิด clock, ตั้งขา AF, ตั้ง NVIC (อยู่ใน stm32f4xx_hal_msp.c)</td><td class="mono">HAL_UART_MspInit</td></tr>
+        <tr><td class="mono">__HAL_&lt;PPP&gt;_…</td><td>Macro (ตัวพิมพ์ใหญ่) เขียน register ตรงๆ ไม่มีค่าที่คืน</td><td class="mono">__HAL_RCC_GPIOA_CLK_ENABLE, __HAL_TIM_SET_AUTORELOAD</td></tr>
+      </tbody>
+    </table></div>
+    <div class="two">
+      <div class="block">
+        <h4>ค่าที่คืน (HAL_StatusTypeDef)</h4>
+        <ul>
+          <li><code>HAL_OK</code> สำเร็จ</li>
+          <li><code>HAL_ERROR</code> พารามิเตอร์ผิดหรือฮาร์ดแวร์ผิดพลาด</li>
+          <li><code>HAL_BUSY</code> peripheral ยังทำงานเดิมไม่เสร็จ (เช่นสั่ง Transmit_IT ซ้ำขณะยังส่งอยู่) คำสั่งใหม่ถูก<b>ปฏิเสธ</b> HAL ไม่มีคิว</li>
+          <li><code>HAL_TIMEOUT</code> ฟังก์ชัน blocking รอเกินเวลาที่กำหนด งานอาจทำไปได้แค่บางส่วน</li>
+        </ul>
+        <p><code>HAL_MAX_DELAY</code> (0xFFFFFFFF) คือ timeout แบบรอไม่มีกำหนด</p>
+      </div>
+      <div class="block">
+        <h4>Handle และ Init</h4>
+        <p>แต่ละ peripheral มีตัวแปร handle เช่น <code>huart2</code>, <code>hadc1</code>, <code>htim2</code> เก็บ<b>การตั้งค่า</b> (<code>.Init</code>), <b>register ของตัวจริง</b> (<code>.Instance</code> = USART2, ADC1, TIM2) และ<b>สถานะ</b> (ว่าง/busy) ทุกฟังก์ชันรับ pointer ของ handle เช่น <code>&amp;huart2</code></p>
+        <p>ใน callback ที่ใช้ร่วมกันหลายตัว ต้องเช็คว่าเป็นตัวไหน เช่น <code>if (huart-&gt;Instance == USART2)</code> หรือ <code>if (htim-&gt;Instance == TIM2)</code></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>5.2 โครงโปรแกรมที่ CubeIDE สร้าง</h3>
+    <div class="two">
+      <pre><span class="k">int</span> main(<span class="k">void</span>){
+  HAL_Init();             <span class="c">// SysTick 1 ms, priority group 4</span>
+  SystemClock_Config();   <span class="c">// ตั้ง clock ของระบบ</span>
+  MX_GPIO_Init();         <span class="c">// PA5, PC13 ตาม .ioc</span>
+  MX_USART2_UART_Init();  <span class="c">// เรียก HAL_UART_Init</span>
+  MX_ADC1_Init();         <span class="c">// เรียก HAL_ADC_Init + ConfigChannel</span>
+  <span class="c">/* USER CODE BEGIN 2 */</span>
+  HAL_UART_Receive_IT(&huart2, &rx, 1);
+  <span class="c">/* USER CODE END 2 */</span>
+  <span class="k">while</span> (1) {
+    <span class="c">/* USER CODE BEGIN 3 */</span>
+    ...
+    <span class="c">/* USER CODE END 3 */</span>
+  }
+}</pre>
+      <ul>
+        <li><b>HAL_Init()</b> ต้องเรียกก่อนฟังก์ชัน HAL ตัวอื่น ตั้ง SysTick ให้ interrupt ทุก 1 ms (ใช้กับ HAL_Delay, HAL_GetTick และ timeout ทั้งหมด) และตั้ง priority grouping</li>
+        <li><b>MX_…_Init()</b> ถูกสร้างจากไฟล์ .ioc เมื่อกด Generate Code</li>
+        <li>โค้ดที่เขียนเองต้องอยู่ระหว่าง <code>USER CODE BEGIN</code> กับ <code>USER CODE END</code> <b>ไม่เช่นนั้นจะหายเมื่อ generate ใหม่</b></li>
+        <li>CubeMX ตั้งชื่อขาของบอร์ด Nucleo ไว้ใน main.h: <code>LD2_Pin</code> = GPIO_PIN_5 (GPIOA), <code>B1_Pin</code> = GPIO_PIN_13 (GPIOC), <code>USART_TX_Pin</code> = PA2, <code>USART_RX_Pin</code> = PA3</li>
+        <li>ISR อยู่ใน <b>stm32f4xx_it.c</b> และเรียก HAL_…_IRQHandler ส่วน callback เราเขียนเองใน main.c</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>5.3 ระบบเวลาและ NVIC</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>ฟังก์ชัน</th><th>ทำอะไร</th><th>ต้องระวัง</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">HAL_Delay(ms)</td><td>วนรอจน HAL_GetTick() เพิ่มครบ ms (รออย่างน้อย ms ที่กำหนด)</td><td><b>Blocking</b> · ถ้าเรียกใน ISR/callback ที่ priority สูงกว่าหรือเท่ากับ SysTick (ค่าเริ่มต้น 15) tick ไม่เดิน <b>ค้างตลอดไป</b></td></tr>
+        <tr><td class="mono">HAL_GetTick()</td><td>คืนเวลาเป็น ms นับจากเริ่มโปรแกรม (uint32_t)</td><td>ใช้ทำ debounce และจับเวลาแบบไม่ block: <code>if (HAL_GetTick() - last &gt;= 500)</code></td></tr>
+        <tr><td class="mono">SysTick_Handler → HAL_IncTick()</td><td>เพิ่มตัวนับ tick ทุก 1 ms</td><td>เป็นหัวใจของ delay และ timeout ทั้งหมดใน HAL</td></tr>
+        <tr><td class="mono">HAL_NVIC_SetPriority(IRQn, pre, sub)</td><td>ตั้ง priority (group 4: preempt 0–15, sub ไม่มีผล)</td><td><b>เลขน้อยสำคัญกว่า</b> ตัวที่สำคัญกว่าขัดตัวที่ด้อยกว่าได้</td></tr>
+        <tr><td class="mono">HAL_NVIC_EnableIRQ / DisableIRQ</td><td>เปิด/ปิด IRQ ใน NVIC</td><td>CubeMX: ติ๊กในแท็บ NVIC ถ้าไม่เปิด callback ไม่ถูกเรียกเลย</td></tr>
+        <tr><td class="mono">__disable_irq() / __enable_irq()</td><td>ปิด/เปิด interrupt ทั้งหมด (CMSIS)</td><td>ใช้ทำ critical section สั้นๆ</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>5.4 GPIO</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>ฟังก์ชัน</th><th>ทำอะไร</th><th>ต้องระวัง</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">__HAL_RCC_GPIOx_CLK_ENABLE()</td><td>เปิด clock พอร์ต</td><td>ต้องมาก่อน HAL_GPIO_Init (HAL_GPIO_Init ไม่เปิดให้)</td></tr>
+        <tr><td class="mono">HAL_GPIO_Init(GPIOx, &amp;init)</td><td>ตั้ง Pin, Mode, Pull, Speed, Alternate</td><td>Mode ที่เป็น IT_RISING/FALLING จะตั้ง SYSCFG EXTICR + EXTI ให้ แต่ยังต้องเปิด NVIC</td></tr>
+        <tr><td class="mono">HAL_GPIO_ReadPin(GPIOx, Pin)</td><td>คืน GPIO_PIN_SET หรือ GPIO_PIN_RESET</td><td>ปุ่ม active low: <b>กด = GPIO_PIN_RESET</b></td></tr>
+        <tr><td class="mono">HAL_GPIO_WritePin(GPIOx, Pin, State)</td><td>ตั้งขาเป็น SET/RESET ผ่าน BSRR</td><td>Pin เป็น bit mask (GPIO_PIN_5 = 1&lt;&lt;5) จึง OR หลายขาพร้อมกันได้ เช่น GPIO_PIN_5 | GPIO_PIN_6</td></tr>
+        <tr><td class="mono">HAL_GPIO_TogglePin(GPIOx, Pin)</td><td>สลับสถานะ</td><td>toggle ทุก T ms ได้ความถี่ 1 / (2T)</td></tr>
+        <tr><td class="mono">HAL_GPIO_EXTI_IRQHandler(Pin)</td><td>ถูกเรียกจาก EXTIx_IRQHandler: <b>ล้าง pending ให้</b> แล้วเรียก callback</td><td>ไม่ต้องล้าง flag เองใน callback</td></tr>
+        <tr><td class="mono">HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)</td><td>callback ของเรา</td><td><b>ใช้ร่วมทุก EXTI line</b> ต้องเช็ค <code>GPIO_Pin == GPIO_PIN_13</code> และทำงานใน ISR</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>5.5 UART</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>ฟังก์ชัน</th><th>ทำอะไร</th><th>ต้องระวัง</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">HAL_UART_Init(&amp;huart2)</td><td>ตั้ง BaudRate, WordLength, StopBits, Parity, Mode, OverSampling จาก .Init และเรียก MspInit (clock, PA2/PA3 AF7, NVIC)</td><td>WordLength <b>รวม parity</b>: 8B + parity = data 7 บิต</td></tr>
+        <tr><td class="mono">HAL_UART_Transmit(&amp;h, buf, n, timeout)</td><td>ส่ง n ไบต์แบบ <b>blocking</b> (วนรอ TXE ทีละไบต์)</td><td>CPU ติดอยู่ n×10/baud วินาที · timeout น้อยเกินได้ HAL_TIMEOUT ส่งไม่ครบ · ใช้ strlen ไม่ใช่ sizeof</td></tr>
+        <tr><td class="mono">HAL_UART_Receive(&amp;h, buf, n, timeout)</td><td>รอรับให้ครบ n ไบต์แบบ blocking</td><td>ถ้ายังไม่ครบจะรอจน timeout · ขณะรออย่างอื่นทำไม่ได้</td></tr>
+        <tr><td class="mono">HAL_UART_Transmit_IT(&amp;h, buf, n)</td><td>เริ่มส่งด้วย TXE interrupt แล้ว<b>คืนค่าทันที</b> เสร็จแล้วเรียก TxCpltCallback</td><td>buf ต้องมีอายุจนส่งเสร็จ (static/global) · เรียกซ้ำขณะส่งอยู่ได้ <b>HAL_BUSY</b></td></tr>
+        <tr><td class="mono">HAL_UART_Receive_IT(&amp;h, buf, n)</td><td>รอรับ n ไบต์ด้วย RXNE interrupt คืนค่าทันที ครบแล้วเรียก RxCpltCallback</td><td>รับครบแล้ว<b>หยุด</b> ต้องเรียกใหม่ใน RxCpltCallback เพื่อรับต่อ (re-arm)</td></tr>
+        <tr><td class="mono">HAL_UART_Transmit_DMA / Receive_DMA</td><td>ใช้ DMA ย้ายข้อมูล มี HalfCplt และ Cplt callback</td><td>buffer ต้องคงอยู่ · CPU ไม่ต้องแตะทีละไบต์</td></tr>
+        <tr><td class="mono">HAL_UARTEx_ReceiveToIdle_IT / _DMA</td><td>รับไปเรื่อยๆ จนสายเงียบ (IDLE) แล้วเรียก HAL_UARTEx_RxEventCallback(huart, Size)</td><td>เหมาะกับข้อความความยาวไม่แน่นอน</td></tr>
+        <tr><td class="mono">HAL_UART_IRQHandler(&amp;huart2)</td><td>อยู่ใน USART2_IRQHandler ตรวจ RXNE/TXE/TC/error แล้วเรียก callback ที่ตรง</td><td>callback ทั้งหมดจึงอยู่ในบริบท ISR</td></tr>
+        <tr><td class="mono">HAL_UART_TxCpltCallback / RxCpltCallback</td><td>ส่ง/รับครบตามจำนวนที่สั่ง</td><td>เช็ค <code>huart-&gt;Instance</code> · สั้น · ตัวแปรร่วม volatile</td></tr>
+        <tr><td class="mono">HAL_UART_ErrorCallback</td><td>เกิด error (huart-&gt;ErrorCode: ORE, FE, PE, NE)</td><td>หลัง error การรับแบบ IT อาจหยุด ต้องสั่งรับใหม่</td></tr>
+      </tbody>
+    </table></div>
+    <p>ในมินิโปรเจกต์มักทำ <code>printf</code> ให้ออกทาง UART โดยเขียน <code>__io_putchar()</code> หรือ <code>_write()</code> ให้เรียก <code>HAL_UART_Transmit</code> ซึ่งก็เป็น blocking เช่นกัน</p>
+  </div>
+
+  <div class="block">
+    <h3>5.6 ADC</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>ฟังก์ชัน</th><th>ทำอะไร</th><th>ต้องระวัง</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">HAL_ADC_Init(&amp;hadc1)</td><td>ตั้ง ClockPrescaler, Resolution, ScanConvMode, ContinuousConvMode, ExternalTrigConv, DataAlign, NbrOfConversion, DMAContinuousRequests, EOCSelection</td><td>ดูตารางแปลเป็น register ในหัวข้อ 3.3</td></tr>
+        <tr><td class="mono">HAL_ADC_ConfigChannel(&amp;hadc1, &amp;sConfig)</td><td>เลือก Channel, Rank (ลำดับ), SamplingTime</td><td>PA0 = ADC_CHANNEL_0</td></tr>
+        <tr><td class="mono">HAL_ADC_Start(&amp;hadc1)</td><td>เปิด ADC และสั่งเริ่มแปลง (SWSTART) ถ้าใช้ software trigger</td><td>Single mode: <b>1 Start = แปลง 1 ครั้ง</b> ต้อง Start ทุกครั้งที่จะอ่าน</td></tr>
+        <tr><td class="mono">HAL_ADC_PollForConversion(&amp;h, timeout)</td><td>วนรอ EOC (blocking)</td><td>ถ้าไม่มีการแปลงใหม่จะรอจน timeout แล้วคืน HAL_TIMEOUT</td></tr>
+        <tr><td class="mono">HAL_ADC_GetValue(&amp;hadc1)</td><td>อ่าน DR (ล้าง EOC)</td><td>ถ้าอ่านก่อนแปลงเสร็จได้ค่าเก่า</td></tr>
+        <tr><td class="mono">HAL_ADC_Stop(&amp;hadc1)</td><td>หยุดการแปลงและปิด ADC</td><td></td></tr>
+        <tr><td class="mono">HAL_ADC_Start_IT / Stop_IT</td><td>เปิด EOC interrupt คืนค่าทันที เสร็จแล้วเรียก HAL_ADC_ConvCpltCallback</td><td>Single mode + software trigger: callback มาครั้งเดียว ต้องสั่ง Start_IT ใหม่ (หรือใช้ continuous / timer trigger)</td></tr>
+        <tr><td class="mono">HAL_ADC_Start_DMA(&amp;h, (uint32_t*)buf, n)</td><td>DMA เติม buf n ค่า เรียก ConvHalfCpltCallback เมื่อครึ่ง และ ConvCpltCallback เมื่อเต็ม</td><td>ใช้คู่ timer TRGO ได้อัตราคงที่ · ประมวลผลครึ่งที่เต็มให้ทันก่อน DMA วนมาทับ</td></tr>
+        <tr><td class="mono">HAL_ADC_ConvCpltCallback(hadc)</td><td>callback เมื่อแปลงเสร็จ (IT) หรือ buffer เต็ม (DMA)</td><td>อยู่ใน ISR: อ่านค่า ตั้ง flag ออก</td></tr>
+        <tr><td class="mono">HAL_ADC_ErrorCallback / LevelOutOfWindowCallback</td><td>เกิด overrun / ค่าออกนอกช่วงของ analog watchdog</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>5.7 Timer (ใช้บ่อยในมินิโปรเจกต์)</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>ฟังก์ชัน / macro</th><th>ทำอะไร</th><th>ต้องระวัง</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">HAL_TIM_Base_Start(&amp;htim2)</td><td>เริ่มนับ ไม่มี interrupt</td><td>พอสำหรับใช้ TRGO สั่ง ADC</td></tr>
+        <tr><td class="mono">HAL_TIM_Base_Start_IT(&amp;htim2)</td><td>เริ่มนับ ครบรอบเรียก HAL_TIM_PeriodElapsedCallback</td><td>callback ใช้ร่วมทุก timer เช็ค <code>htim-&gt;Instance</code> · คาบ = (PSC+1)(ARR+1)/f</td></tr>
+        <tr><td class="mono">__HAL_TIM_SET_AUTORELOAD(&amp;h, arr)</td><td>เปลี่ยน ARR (คาบ) ขณะทำงาน</td><td>ใช้สลับ interval จากปุ่ม</td></tr>
+        <tr><td class="mono">__HAL_TIM_GET_COUNTER / SET_COUNTER</td><td>อ่าน/ตั้งค่าตัวนับ</td><td>จับเวลาละเอียดกว่า ms</td></tr>
+        <tr><td class="mono">HAL_TIM_PWM_Start(&amp;h, TIM_CHANNEL_x)</td><td>เริ่มสร้าง PWM ที่ขา</td><td>duty = CCR / (ARR+1)</td></tr>
+        <tr><td class="mono">__HAL_TIM_SET_COMPARE(&amp;h, ch, ccr)</td><td>เปลี่ยน duty cycle</td><td>ใช้หรี่ LED</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>5.8 กับดัก HAL ที่ออกสอบบ่อย</h3>
+    <ol>
+      <li>เรียก <b>HAL_Delay ใน callback</b> ของ IRQ ที่ priority สูงกว่า SysTick → ค้าง</li>
+      <li><b>HAL_UART_Receive_IT ครั้งเดียว</b> → ได้ callback ครั้งเดียว ต้อง re-arm ใน RxCpltCallback</li>
+      <li><b>Transmit_IT ซ้อนกัน</b> → ครั้งหลังได้ HAL_BUSY ข้อความหาย</li>
+      <li><b>buffer local</b> ส่งด้วย _IT หรือ _DMA → ข้อมูลเพี้ยนเพราะ stack ถูกใช้ทับ</li>
+      <li><b>HAL_UART_Transmit ที่ timeout น้อยกว่าเวลาส่งจริง</b> → HAL_TIMEOUT ส่งไม่ครบ</li>
+      <li><b>sizeof แทน strlen</b> → ส่ง '\0' ออกไปด้วย</li>
+      <li><b>HAL_ADC_Start ครั้งเดียวใน single mode</b> → ค่าค้างและ PollForConversion timeout</li>
+      <li><b>ไม่เช็ค GPIO_Pin / Instance ใน callback</b> → ปุ่มหรือ peripheral อื่นไปทำงานผิดตัว</li>
+      <li><b>ลืมเปิด NVIC</b> (ไม่ติ๊กใน CubeMX) → callback ไม่ถูกเรียก</li>
+      <li><b>ลืม volatile</b> ตัวแปรที่ callback แก้ → main วนค้างเมื่อเปิด optimization</li>
+      <li><b>เขียนโค้ดนอก USER CODE</b> → หายเมื่อ generate ใหม่</li>
+    </ol>
+  </div>
+</section>
+
 <!-- ================= CHEAT ================= -->
 <section class="topic" id="cheat" style="--c:var(--ink)">
   <div class="topic-head">
@@ -1104,7 +1278,7 @@ HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);</pre>
         <ol>
           <li>ทั้งหมด 70 ข้อ รวม 140 คะแนน ข้อละ 2 คะแนน <u><b>ต้องตอบให้ถูกพร้อมคำอธิบายเหตุผลที่ถูกต้อง</b></u> หากไม่มีคำอธิบายหรืออธิบายผิดมากจะไม่ได้คะแนน</li>
           <li>ไม่ใช้เอกสารและเครื่องคิดเลข ตัวเลขทุกข้อคิดในใจได้</li>
-          <li>ไม่ได้ให้เขียนโค้ด แต่มีโค้ดให้อ่านและอธิบายการทำงาน ส่วนใหญ่เป็น CMSIS แบบที่เรียน บางข้อเป็น HAL ซึ่งชื่อฟังก์ชันบอกการทำงานอยู่แล้ว</li>
+          <li>ไม่ได้ให้เขียนโค้ด แต่มีโค้ดให้อ่านและอธิบายการทำงาน ทั้งแบบ CMSIS และ HAL Library ต้องเข้าใจพฤติกรรมของฟังก์ชัน HAL (blocking หรือไม่, ค่าที่คืน, callback)</li>
           <li>ฮาร์ดแวร์: LED = PA5 (active high), ปุ่ม = PC13 (active low), UART TX/RX = PA2/PA3 (USART2), Potentiometer = PA0 (ADC1_IN0), VREF+ = 3.3 V</li>
         </ol>
       </div>
@@ -1148,7 +1322,7 @@ HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);</pre>
 
 <a href="#exam" class="pill" id="pill" hidden></a>
 <script>
-/* ข้อสอบจำลอง 70 ข้อ: GPIO 15 · UART 20 · ADC 20 · Interrupt 15 — เน้นอ่านโค้ด (CMSIS เป็นหลัก, HAL บางข้อ) */
+/* ข้อสอบจำลอง 70 ข้อ: GPIO 15 · UART 20 · ADC 20 · Interrupt 15 — อ่านโค้ด CMSIS + พฤติกรรมของ HAL */
 const QUESTIONS = [
 {id:"g1",
  t:"gpio",
@@ -1203,13 +1377,12 @@ GPIOA->ODR    |= GPIO_ODR_OD5;`,
 
 {id:"g6",
  t:"gpio",
- q:`ถ้าจะตั้ง PC13 เป็น input ต้องล้างบิตใดของ <code>GPIOC->MODER</code>`,
- o:[`บิต 13`,`บิต 14:13`,`บิต 26:25`,`บิต 27:26`],
- a:3,
- keep:true,
- x:`MODER ใช้ 2 บิตต่อขา ขา y อยู่ที่บิต [2y+1 : 2y] ขา 13 จึงอยู่ที่บิต <b>27:26</b> และ input = 00 จึงเขียน <code>GPIOC->MODER &amp;= ~(0b11 &lt;&lt; 26)</code>`,
- k:[`MODER 2 บิตต่อขา`,`ขา 13 → บิต 2×13 = 26 ถึง 27`],
- w:[`นั่นคือรูปแบบของ register 1 บิตต่อขา เช่น IDR, ODR`,`คิดเหมือน 1 บิตต่อขาแล้วต่อบิตถัดไป`,`ตำแหน่งเริ่มต้องเป็น 26 (เลขคู่) ไม่ใช่ 25`,null]},
+ q:`นักศึกษาเขียนโค้ดอ่านปุ่มไว้ใน while(1) ของ main.c แล้วกลับไปแก้ไฟล์ .ioc และกด Generate Code ปรากฏว่าโค้ดที่เขียนหายไป สาเหตุคืออะไร`,
+ o:[`STM32CubeIDE ลบโค้ดทุกครั้งที่ build`,`โค้ดถูกเขียนไว้นอกช่อง /* USER CODE BEGIN … */ กับ /* USER CODE END … */ จึงถูกเขียนทับตอน generate`,`ไฟล์ .ioc เก็บโค้ด main ไว้ ต้องเขียนในไฟล์ .ioc`,`HAL ไม่อนุญาตให้เขียนโค้ดใน while(1)`],
+ a:1,
+ x:`CubeMX สร้าง main.c ใหม่ทุกครั้งที่ generate และ<b>เก็บไว้เฉพาะโค้ดที่อยู่ระหว่าง USER CODE BEGIN กับ USER CODE END</b> โค้ดที่อยู่นอกช่องเหล่านี้จะถูกเขียนทับ`,
+ k:[`generate code เขียน main.c ใหม่`,`เก็บเฉพาะโค้ดในช่อง USER CODE BEGIN/END`],
+ w:[`การ build ไม่ลบโค้ด`,null,`.ioc เก็บการตั้งค่า ไม่ได้เก็บโค้ด`,`เขียนได้ ถ้าอยู่ในช่อง USER CODE`]},
 
 {id:"g7",
  t:"gpio",
@@ -1282,13 +1455,19 @@ GPIOA->ODR    |= GPIO_ODR_OD5;`,
 
 {id:"g14",
  t:"gpio",
- q:`for-loop delay ใช้ 12 คำสั่งต่อรอบที่ 16 MHz ถ้าวน <code>toggle LED → delay</code> และต้องการให้ LED กระพริบ <b>2 Hz</b> ต้องตั้ง DELAY_THRESHOLD ประมาณเท่าใด`,
- o:[`333,333`,`666,667`,`1,333,333`,`2,666,667`],
- a:0,
- keep:true,
- x:`2 Hz → คาบ 0.5 s และต้อง toggle 2 ครั้งต่อคาบ จึง toggle ทุก <b>0.25 s</b> จำนวนรอบ = t × f / 12 = 0.25 × 16,000,000 / 12 = 4,000,000 / 12 ≈ <b>333,333</b>`,
- k:[`toggle ทุก 0.25 s`,`N = 0.25 × 16 M / 12`],
- w:[null,`toggle ทุก 0.5 s ได้ 1 Hz`,`delay 1 s ได้ 0.5 Hz (Lab 1.5)`,`delay 2 s`]},
+ q:`CubeMX สร้างโค้ดนี้ใน MX_GPIO_Init() สำหรับ LED PA5 (active high) ข้อใดอธิบายถูกต้อง`,
+ code:`__HAL_RCC_GPIOA_CLK_ENABLE();
+GPIO_InitStruct.Pin   = GPIO_PIN_5;
+GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_OD;
+GPIO_InitStruct.Pull  = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);`,
+ o:[`LED ติด เพราะเปิด clock และสั่ง SET แล้ว`,`LED ไม่ติด เพราะ Mode เป็น open-drain ซึ่งเมื่อ SET ขาจะลอย (high-Z) ไม่จ่ายกระแส ต้องใช้ GPIO_MODE_OUTPUT_PP`,`LED ไม่ติด เพราะลืมเปิด clock`,`LED ติดสลัว เพราะ Speed เป็น LOW`],
+ a:1,
+ x:`OUTPUT_OD = MODER 01 + OTYPER 1 (<b>open-drain</b>) มีแต่ N-MOS: SET ไม่ได้ดึงขาขึ้น VDD แต่ปล่อยเป็น <b>high-Z</b> LED แบบ active high ต้องการให้ขาจ่ายกระแส จึงไม่ติด ต้องใช้ <b>GPIO_MODE_OUTPUT_PP</b> ส่วน clock เปิดแล้วในบรรทัดแรก และ Speed มีผลแค่ความชันของขอบสัญญาณ`,
+ k:[`OUTPUT_OD = open-drain: SET → high-Z`,`active high ต้อง push-pull (OUTPUT_PP)`],
+ w:[`open-drain จ่ายกระแสออกไม่ได้`,null,`บรรทัดแรกเปิด clock แล้ว`,`Speed ไม่ได้กำหนดความสว่าง`]},
 
 {id:"g15",
  t:"gpio",
@@ -1399,18 +1578,12 @@ GPIOA->AFR[0] |= (7 << GPIO_AFRL_AFSEL2_Pos);`,
 
 {id:"u10",
  t:"uart",
- q:`ช่องว่าง 1 และ 2 ควรเป็นอะไร`,
- code:`USART2->CR1 |= ___1___;              // เปิดภาครับ
-while(1){
-    if ((USART2->SR & ___2___) != 0){
-        if (USART2->DR == '1') { ... }
-    }
-}`,
- o:[`1 = USART_CR1_TE, 2 = USART_SR_TXE`,`1 = USART_CR1_RE, 2 = USART_SR_RXNE`,`1 = USART_CR1_RXNEIE, 2 = USART_SR_TC`,`1 = USART_CR1_UE, 2 = USART_SR_ORE`],
+ q:`เรียก <code>HAL_UART_Receive_IT(&huart2, &rx, 1)</code> ครั้งเดียวก่อน while(1) และเขียน HAL_UART_RxCpltCallback ให้ toggle LED เมื่อได้ตัว 'G' ผลคือรับได้แค่ตัวอักษรแรก สาเหตุคืออะไร`,
+ o:[`ต้องเปลี่ยน Size เป็น 100`,`Receive_IT รับครบตาม Size แล้วหยุด ต้องเรียก HAL_UART_Receive_IT ใหม่ใน callback เพื่อรอตัวถัดไป`,`callback ต้องล้าง RXNE เอง`,`ต้องใช้ HAL_UART_Receive แทน`],
  a:1,
- x:`การรับต้องเปิด receiver ด้วยบิต <b>RE</b> แล้ว polling ดู <b>RXNE</b>: RXNE = 1 แปลว่ามีข้อมูลใน DR พร้อมอ่าน และการอ่าน DR จะล้าง RXNE ให้เอง`,
- k:[`RE เปิดภาครับ`,`RXNE = มีข้อมูลรออ่าน`],
- w:[`TE/TXE เป็นฝั่งส่ง`,null,`RXNEIE เปิด interrupt และ TC เป็นฝั่งส่ง`,`ORE เป็น error ไม่ใช่สัญญาณมีข้อมูลปกติ`]},
+ x:`HAL_UART_Receive_IT เปิด RXNE interrupt เพื่อรับ<b>ครบตามจำนวน Size</b> เมื่อครบ HAL ปิด interrupt การรับ แล้วเรียก RxCpltCallback ครั้งเดียว ถ้าต้องการรับต่อเนื่องต้อง<b>เรียก HAL_UART_Receive_IT ใหม่ใน callback</b> (re-arm)`,
+ k:[`_IT รับครบ Size แล้วหยุด`,`ต้อง re-arm ใน RxCpltCallback`],
+ w:[`จะได้ callback ก็ต่อเมื่อรับครบ 100 ตัว ไม่ได้แก้ปัญหา`,null,`HAL_UART_IRQHandler อ่าน DR ให้แล้ว RXNE ถูกล้างเอง`,`แบบ blocking ทำให้ CPU ติดรอ เสียข้อดีของ interrupt`]},
 
 {id:"u11",
  t:"uart",
@@ -1427,13 +1600,12 @@ UART2_TxString(buf);`,
 
 {id:"u12",
  t:"uart",
- q:`ทุกครั้งที่ sample ADC ต้องส่งข้อความ 10 ไบต์ผ่าน UART 115200 bps แบบ 8N1 อัตรา sampling สูงสุดที่ UART ยังส่งทันประมาณเท่าใด`,
- o:[`115 Hz`,`1,152 Hz`,`1,440 Hz`,`11,520 Hz`],
+ q:`เรียก <code>HAL_UART_Transmit_IT(&huart2, a, 20);</code> แล้วตามด้วย <code>HAL_UART_Transmit_IT(&huart2, b, 20);</code> ทันที ผลคืออะไร`,
+ o:[`ส่ง a แล้วต่อด้วย b ตามลำดับ`,`ครั้งที่สองคืนค่า HAL_BUSY และข้อความ b ไม่ถูกส่ง`,`b เขียนทับ a ทันที`,`ข้อความทั้งสองถูกสลับไบต์กัน`],
  a:1,
- keep:true,
- x:`8N1 ใช้ <b>10 บิตต่อไบต์</b> → 115200 / 10 = 11,520 ไบต์/วินาที หารด้วย 10 ไบต์ต่อข้อความได้ <b>≈ 1,152 ข้อความ/วินาที</b>`,
- k:[`8N1 = 10 บิตต่อไบต์`,`11,520 B/s ÷ 10 B`],
- w:[`หารผิดไป 10 เท่า`,null,`คิด 8 บิตต่อไบต์ ลืม start/stop`,`นั่นคือไบต์/วินาที`]},
+ x:`Transmit_IT คืนค่าทันทีแต่ยัง<b>ส่ง a อยู่เบื้องหลัง</b> สถานะของ huart2 เป็น busy HAL <b>ไม่มีคิว</b> คำสั่งที่สองจึงคืน <b>HAL_BUSY</b> และไม่ทำอะไร ต้องตรวจค่าที่คืน รอ TxCpltCallback ก่อนส่งใหม่ หรือทำ buffer/คิวเอง`,
+ k:[`_IT คืนทันทีแต่ยังส่งอยู่ (busy)`,`ครั้งที่สองได้ HAL_BUSY ข้อความหาย`],
+ w:[`HAL ไม่มีคิวให้`,null,`HAL ปฏิเสธคำสั่งใหม่ ไม่ได้เขียนทับ`,`ไม่มีการสลับไบต์`]},
 
 {id:"u13",
  t:"uart",
@@ -1576,12 +1748,18 @@ ADC1->CR2    |= ADC_CR2_ADON;`,
 
 {id:"a6",
  t:"adc",
- q:`ลำดับการอ่าน ADC แบบ polling หนึ่งครั้งข้อใดถูก (ใน HAL เทียบได้กับ HAL_ADC_Start → HAL_ADC_PollForConversion → HAL_ADC_GetValue)`,
- o:[`อ่าน ADC1->DR → ตั้ง SWSTART → รอ EOC`,`ตั้ง SWSTART → รอ EOC = 1 → อ่าน ADC1->DR`,`รอ EOC = 1 → ตั้ง SWSTART → อ่าน DR`,`ตั้ง SWSTART → อ่าน DR → รอ EOC`],
+ q:`โค้ดนี้อ่าน potentiometer ใน while(1) (ContinuousConvMode = DISABLE) เมื่อหมุน pot ค่าที่ได้เป็นอย่างไร`,
+ code:`HAL_ADC_Start(&hadc1);                       // เรียกครั้งเดียวก่อนลูป
+while (1) {
+    HAL_ADC_PollForConversion(&hadc1, 100);
+    raw = HAL_ADC_GetValue(&hadc1);
+    HAL_Delay(200);
+}`,
+ o:[`เปลี่ยนตาม pot ทุกรอบ`,`ค่าค้างที่ค่าแรก เพราะ single mode แปลงครั้งเดียวต่อ HAL_ADC_Start รอบถัดไป PollForConversion รอจน timeout (HAL_TIMEOUT) แล้ว GetValue คืนค่าเดิม`,`ได้ 0 ทุกรอบ`,`โปรแกรมค้างใน PollForConversion ตลอดไป`],
  a:1,
- x:`ต้อง<b>เริ่มแปลง</b> (SWSTART) → <b>รอให้เสร็จ</b> (EOC = 1) → <b>อ่านผล</b> (DR ซึ่งล้าง EOC ด้วย) ถ้าอ่านก่อนเสร็จจะได้ค่าเก่า ถ้ารอก่อนเริ่มจะรอไม่จบ`,
- k:[`SWSTART → รอ EOC → อ่าน DR`,`อ่านก่อนเสร็จได้ค่าเก่า`],
- w:[`อ่านก่อนเริ่มแปลง`,null,`ยังไม่ได้เริ่ม EOC ไม่มาจะรอไม่จบ`,`อ่านก่อนแปลงเสร็จ`]},
+ x:`Single mode: <b>HAL_ADC_Start 1 ครั้ง = แปลง 1 ครั้ง</b> รอบแรกได้ค่าจริง รอบถัดไปไม่มีการแปลงใหม่ PollForConversion จึงรอจนครบ timeout 100 ms แล้วคืน <b>HAL_TIMEOUT</b> (ไม่ค้างตลอดไปเพราะมี timeout) และ GetValue คืน<b>ค่าเดิมใน DR</b> แก้โดยเรียก HAL_ADC_Start ในลูป หรือเปิด ContinuousConvMode`,
+ k:[`single mode: Start 1 ครั้ง = แปลง 1 ครั้ง`,`Poll หมด timeout, GetValue ได้ค่าเดิม`],
+ w:[`ไม่มีการแปลงใหม่`,null,`DR เก็บค่าแรกไว้ ไม่ใช่ 0`,`มี timeout 100 ms จึงไม่ค้างตลอดไป (ต่างจาก while รอ EOC แบบ CMSIS)`]},
 
 {id:"a7",
  t:"adc",
@@ -1683,12 +1861,19 @@ while (1) {
 
 {id:"a17",
  t:"adc",
- q:`เปิด EOCIE ให้ ADC เกิด interrupt เมื่อแปลงเสร็จ ข้อใดเหมาะที่สุดสำหรับงานใน <code>ADC_IRQHandler</code>`,
- o:[`sprintf แล้วส่ง string ทาง UART แบบรอ TXE ทันที`,`อ่าน ADC1->DR เก็บลงตัวแปร volatile ตั้ง flag แล้วออก ให้ main จัดการส่ง UART`,`ใส่ delay 100 ms เพื่อรอให้ค่านิ่ง`,`วน while รอให้ผู้ใช้กดปุ่มก่อนออก`],
+ q:`ใช้ <code>HAL_ADC_Start_IT(&hadc1)</code> แล้วเขียน callback ดังนี้ ข้อใดถูกต้องที่สุด`,
+ code:`void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
+    char buf[32];
+    uint16_t v = HAL_ADC_GetValue(hadc);
+    sprintf(buf, "ADC=%u\\r\\n", v);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), 100);
+    HAL_ADC_Start_IT(hadc);
+}`,
+ o:[`ถูกต้องดีแล้ว`,`ไม่เหมาะ: callback ถูกเรียกจาก ADC_IRQHandler จึงทำงานใน ISR การ sprintf และ HAL_UART_Transmit (blocking ~1 ms) ทำให้ interrupt อื่นที่ priority เท่ากันหรือต่ำกว่าต้องรอ ควรเก็บค่า ตั้ง flag แล้วให้ main ส่ง`,`ผิดเพราะ HAL_ADC_GetValue ใช้ใน callback ไม่ได้`,`ผิดเพราะห้ามเรียก HAL_ADC_Start_IT ใน callback`],
  a:1,
- x:`ISR ต้อง<b>สั้นและไม่ block</b>: อ่าน DR (ซึ่งล้าง EOC ด้วย) เก็บลงตัวแปร <b>volatile</b> ตั้ง flag แล้วออก งานช้าอย่าง sprintf หรือส่ง UART แบบรอ TXE จะทำให้ interrupt อื่นที่ priority เท่ากันหรือต่ำกว่าต้องรอ`,
- k:[`ISR สั้น: อ่าน DR + flag`,`งานช้าไป main`],
- w:[`งานช้าใน ISR บล็อกระบบ`,null,`delay ใน ISR บล็อกทั้งระบบ`,`ห้ามวนรอใน ISR`]},
+ x:`HAL_ADC_ConvCpltCallback ถูกเรียกจาก <b>ADC_IRQHandler → HAL_ADC_IRQHandler</b> จึงทำงาน<b>ในบริบท interrupt</b> ต้องสั้น การส่ง UART แบบ blocking ใน ISR บล็อก interrupt อื่น ควรทำแค่เก็บค่าลงตัวแปร volatile + ตั้ง flag (การ Start_IT ใหม่ใน callback ทำได้ เพราะ single mode ต้องสั่งใหม่ทุกครั้ง)`,
+ k:[`callback ทำงานใน ISR`,`ห้ามงาน blocking/ช้าใน callback ให้ตั้ง flag`],
+ w:[`มีงาน blocking ใน ISR`,null,`GetValue ใช้ใน callback ได้ปกติ`,`เรียกใหม่ได้ และจำเป็นใน single mode`]},
 
 {id:"a18",
  t:"adc",
@@ -1730,12 +1915,12 @@ while (1) {
 
 {id:"i2",
  t:"int",
- q:`มีปุ่ม 2 ปุ่มที่ PC13 และ PB10 ใช้ EXTI ทั้งคู่ ข้อใดถูก`,
- o:[`มี ISR แยกชื่อ EXTI13_IRQHandler และ EXTI10_IRQHandler`,`ใช้ EXTI15_10_IRQHandler ร่วมกัน ใน ISR ต้องเช็ค EXTI->PR ว่าบิต 10 หรือ 13 เป็น 1 แล้วล้างเฉพาะบิตนั้น`,`ใช้ EXTI15_10_IRQHandler ร่วมกัน และเขียน EXTI->PR = 0xFFFF ทุกครั้งเพื่อล้างทุกบิต`,`ใช้พร้อมกันไม่ได้เพราะอยู่ต่างพอร์ต`],
+ q:`ใน <code>HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)</code> ต้องล้าง pending flag ของ EXTI เองหรือไม่ และควรเช็คอะไร`,
+ o:[`ต้องล้างเองด้วย EXTI->PR ทุกครั้ง`,`ไม่ต้อง เพราะ HAL_GPIO_EXTI_IRQHandler ล้าง flag ก่อนเรียก callback แล้ว แต่ควรเช็ค GPIO_Pin == GPIO_PIN_13 เพราะ callback ตัวเดียวใช้กับทุก EXTI line`,`ไม่ต้องเช็คอะไร callback ถูกเรียกจากปุ่ม PC13 เท่านั้น`,`ต้องเรียก HAL_NVIC_ClearPendingIRQ ทุกครั้ง`],
  a:1,
- x:`EXTI0–4 มี vector ของตัวเอง แต่ line 5–9 ใช้ EXTI9_5 ร่วมกัน และ <b>line 10–15 ใช้ EXTI15_10 ร่วมกัน</b> ISR จึงต้อง<b>เช็ค PR</b> เพื่อรู้ว่าปุ่มไหนกด และล้างเฉพาะบิตที่จัดการแล้ว`,
- k:[`line 10–15 ใช้ vector EXTI15_10 ร่วม`,`เช็ค PR แยกปุ่ม ล้างเฉพาะบิตนั้น`],
- w:[`ไม่มี vector แยกของ line 10–15`,null,`ล้างทุกบิตอาจทำให้พลาดอีกปุ่ม`,`คนละ line (10 กับ 13) จึงใช้พร้อมกันได้`]},
+ x:`ลำดับคือ EXTI15_10_IRQHandler → <b>HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13)</b> ซึ่ง<b>ล้าง pending ก่อน</b>แล้วเรียก HAL_GPIO_EXTI_Callback(GPIO_Pin) callback มีตัวเดียวสำหรับทุก EXTI line จึงต้อง<b>เช็คว่าเป็นขาไหน</b>`,
+ k:[`HAL_GPIO_EXTI_IRQHandler ล้าง flag ให้แล้ว`,`callback ใช้ร่วม ต้องเช็ค GPIO_Pin`],
+ w:[`HAL ทำให้แล้ว`,null,`callback เดียวใช้กับทุก EXTI line`,`ไม่จำเป็น NVIC จัดการ pending ของตัวเอง`]},
 
 {id:"i3",
  t:"int",
@@ -1807,29 +1992,29 @@ int main(void){
 
 {id:"i9",
  t:"int",
- q:`ฟังก์ชัน <code>delay_ms()</code> วนรอให้ตัวแปร tick เพิ่ม ซึ่ง tick ถูกเพิ่มใน SysTick interrupt (priority 15) ถ้าเรียก <code>delay_ms(100)</code> ใน EXTI15_10_IRQHandler ที่ตั้ง priority 0 จะเกิดอะไรขึ้น (HAL_Delay ทำงานแบบเดียวกันนี้)`,
- o:[`หน่วง 100 ms แล้วทำงานต่อปกติ`,`ค้างไม่ออกจาก ISR เพราะ SysTick ซึ่ง priority ต่ำกว่าขัด EXTI ไม่ได้ tick จึงไม่เพิ่ม`,`หน่วงแค่ 1 ms`,`delay ถูกข้ามอัตโนมัติ`],
+ q:`EXTI15_10 ตั้ง preempt priority = 0 ส่วน SysTick = 15 (ค่าเริ่มต้นของ HAL) ถ้าเรียก <code>HAL_Delay(50)</code> ใน HAL_GPIO_EXTI_Callback เพื่อ debounce จะเกิดอะไรขึ้น`,
+ o:[`หน่วง 50 ms แล้วทำงานต่อปกติ`,`ค้างไม่ออกจาก callback เพราะ HAL_Delay รอ tick ซึ่งเพิ่มใน SysTick interrupt แต่ SysTick priority ต่ำกว่าจึงขัด EXTI ไม่ได้`,`หน่วงแค่ 1 ms`,`HAL_Delay ถูกข้ามอัตโนมัติใน ISR`],
  a:1,
- x:`delay วนรอให้ <b>tick เพิ่ม</b> ซึ่งเพิ่มใน <b>SysTick interrupt</b> แต่ขณะอยู่ใน EXTI ISR (priority 0) SysTick (15) มี priority ต่ำกว่าจึง<b>ขัดไม่ได้</b> tick ไม่เพิ่ม ลูปไม่จบ ระบบค้าง`,
- k:[`delay พึ่ง SysTick interrupt`,`SysTick ต่ำกว่า ขัด EXTI ไม่ได้ → ค้าง`],
- w:[`tick ไม่เพิ่มขณะอยู่ใน ISR ที่สูงกว่า`,null,`ไม่มีกลไกนี้`,`ไม่มีการข้าม delay`]},
+ x:`HAL_Delay วนรอให้ <b>HAL_GetTick()</b> เพิ่ม ซึ่งเพิ่มใน <b>SysTick_Handler → HAL_IncTick()</b> ขณะอยู่ใน EXTI ISR (priority 0) SysTick (15) <b>ขัดไม่ได้</b> tick ไม่เพิ่ม ลูปไม่จบ ระบบค้าง ควร debounce ด้วยการเทียบ HAL_GetTick() กับเวลาครั้งก่อนแทน`,
+ k:[`HAL_Delay พึ่ง SysTick interrupt`,`SysTick ต่ำกว่า ขัด EXTI ไม่ได้ → ค้าง`],
+ w:[`tick ไม่เพิ่มขณะอยู่ใน ISR ที่สำคัญกว่า`,null,`ไม่มีกลไกนี้`,`HAL ไม่ข้าม delay`]},
 
 {id:"i10",
  t:"int",
- q:`เปิดทั้ง RXNEIE และ TXEIE ของ USART2 ใน <code>USART2_IRQHandler</code> ควรเขียนอย่างไร`,
- o:[`อ่าน DR ทุกครั้งที่เข้า ISR เพราะ USART2 มีแค่เหตุการณ์รับ`,`เช็ค SR: ถ้า RXNE = 1 อ่าน DR, ถ้า TXE = 1 และ TXEIE เปิด เขียนไบต์ถัดไป เพราะหลายเหตุการณ์ใช้ vector เดียวกัน`,`แยกเป็น USART2_RX_IRQHandler กับ USART2_TX_IRQHandler`,`ไม่ต้องเช็ค เพราะเข้า ISR ได้ทีละเหตุการณ์`],
+ q:`HAL_UART_RxCpltCallback ถูกเรียกจากที่ใด และมีผลอย่างไรต่อการเขียนโค้ดใน callback`,
+ o:[`ถูกเรียกจาก main loop จึงทำงานหนักได้`,`ถูกเรียกจาก USART2_IRQHandler → HAL_UART_IRQHandler จึงทำงานในบริบท interrupt ต้องสั้นและไม่ block`,`ถูกเรียกจาก SysTick ทุก 1 ms`,`ถูกเรียกโดย DMA เท่านั้น`],
  a:1,
- x:`USART2 มี<b>interrupt vector เดียว</b> ที่ใช้ร่วมกันทั้ง RXNE, TXE, TC, IDLE และ error ใน ISR จึงต้อง<b>อ่าน SR เพื่อดูว่าเกิดจากอะไร</b> แล้วจัดการและล้าง flag ให้ถูกตัว`,
- k:[`USART2 มี vector เดียวใช้ร่วม`,`เช็ค SR (RXNE / TXE) ก่อนจัดการ`],
- w:[`ถ้าเข้าเพราะ TXE แล้วอ่าน DR จะไม่ได้ส่งข้อมูล`,null,`ไม่มี vector แยก`,`หลาย flag อาจเป็น 1 พร้อมกันได้`]},
+ x:`เมื่อเกิด RXNE interrupt CPU เข้า <b>USART2_IRQHandler</b> (ใน stm32f4xx_it.c) ซึ่งเรียก <b>HAL_UART_IRQHandler(&amp;huart2)</b> เมื่อรับครบ Size HAL จึงเรียก RxCpltCallback callback จึง<b>อยู่ใน ISR</b> ควรเก็บข้อมูล ตั้ง flag re-arm การรับ แล้วออก`,
+ k:[`USART2_IRQHandler → HAL_UART_IRQHandler → callback`,`อยู่ใน ISR ต้องสั้น`],
+ w:[`ไม่ได้ถูกเรียกจาก main`,null,`SysTick ไม่เกี่ยว`,`ใช้กับ _IT ได้ด้วย`]},
 
 {id:"i11",
  t:"int",
- q:`ตั้ง EXTI ครบ (SYSCFG, IMR, FTSR) และเขียน EXTI15_10_IRQHandler ถูกต้อง แต่ลืมเรียก <code>NVIC_EnableIRQ(EXTI15_10_IRQn)</code> กดปุ่มแล้วเป็นอย่างไร`,
- o:[`ISR ทำงานปกติ`,`ISR ไม่ถูกเรียกเลย แม้ EXTI จะจับขอบได้`,`ISR ทำงานช้าลง`,`HardFault`],
+ q:`ตั้ง PC13 เป็น GPIO_MODE_IT_FALLING และเขียน HAL_GPIO_EXTI_Callback ถูกต้อง แต่ไม่ได้ติ๊ก “EXTI line[15:10] interrupts” ในแท็บ NVIC ของ CubeMX (จึงไม่มี HAL_NVIC_EnableIRQ) กดปุ่มแล้วเป็นอย่างไร`,
+ o:[`callback ทำงานปกติ`,`callback ไม่ถูกเรียกเลย แม้ EXTI จะจับขอบสัญญาณได้`,`callback ทำงานช้าลง`,`HardFault`],
  a:1,
- x:`Interrupt ต้องผ่าน 3 ด่าน: (1) peripheral เปิด interrupt (EXTI IMR) (2) <b>NVIC เปิด IRQ นั้น</b> (3) interrupt รวมไม่ถูกปิด ขาดด่านที่ 2 request ไปไม่ถึง CPU ISR จึงไม่ทำงาน`,
- k:[`ต้องผ่าน peripheral + NVIC + global enable`,`ไม่ enable NVIC → ไม่เข้า ISR`],
+ x:`Interrupt ต้องผ่าน 3 ด่าน: (1) peripheral เปิด interrupt (HAL_GPIO_Init กับ IT mode ตั้ง EXTI IMR ให้) (2) <b>NVIC เปิด IRQ นั้น</b> (3) interrupt รวมไม่ถูกปิด ขาดด่านที่ 2 request ไปไม่ถึง CPU จึงไม่มี ISR และไม่มี callback`,
+ k:[`ต้องผ่าน peripheral + NVIC + global enable`,`ไม่ enable NVIC → ไม่เข้า ISR/callback`],
  w:[`ทุก IRQ ต้องผ่าน NVIC`,null,`ไม่ใช่เรื่องความเร็ว`,`ไม่มี exception เกิด`]},
 
 {id:"i12",
@@ -1892,7 +2077,7 @@ int main(void){
     adc:{no:3,name:"ADC",c:"var(--adc)"}, int:{no:4,name:"Interrupt",c:"var(--int)"}
   };
   const LETTERS = ["ก","ข","ค","ง"];
-  const KEY = "en813202-mock-v3";
+  const KEY = "en813202-mock-v4";
   const $ = (s, r=document) => r.querySelector(s);
   const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
