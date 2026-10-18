@@ -1,0 +1,2127 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="เตรียมสอบปลายภาค EN813202: สรุป GPIO, UART, ADC, Interrupt บน STM32 (CMSIS + อ่านโค้ด HAL) พร้อมข้อสอบจำลอง 70 ข้อ 140 คะแนน">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>EN813202 Final Prep</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: datasheet-style notebook. Sticky contents rail on the left (desktop), chip rail on top (phone).
+   Each topic wears an oscilloscope channel colour: CH1 GPIO, CH2 UART, CH3 ADC, CH4 Interrupt, MATH System. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --ink:#152030; --muted:#5b6778; --line:#d6dce5;
+  --accent:#2350c8; --accent-ink:#ffffff;
+  --gpio:#a86a0c; --uart:#0b7685; --adc:#a62a72; --int:#2b7a49; --sys:#6447c0;
+  --ok:#1d7a44; --ok-bg:#e3f4ea; --bad:#b4332b; --bad-bg:#fbe7e5; --warn-bg:#fff4dc; --warn:#8a5a00;
+  --code-bg:#eef1f6; --code-ink:#1b2a40;
+  --f-display:"Chakra Petch","IBM Plex Sans Thai","Noto Sans Thai",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e131a; --surface:#151c26; --sunk:#1b2430; --ink:#e3e8f0; --muted:#97a3b4; --line:#283343;
+  --accent:#86a4ff; --accent-ink:#0b1220;
+  --gpio:#f0b54a; --uart:#4cc8d8; --adc:#f07cbf; --int:#6ed39a; --sys:#ab95ff;
+  --ok:#6ed39a; --ok-bg:#15301f; --bad:#ff8a80; --bad-bg:#3a1a19; --warn-bg:#33270f; --warn:#f0c46a;
+  --code-bg:#0b1017; --code-ink:#d6e0ee; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e131a; --surface:#151c26; --sunk:#1b2430; --ink:#e3e8f0; --muted:#97a3b4; --line:#283343;
+  --accent:#86a4ff; --accent-ink:#0b1220;
+  --gpio:#f0b54a; --uart:#4cc8d8; --adc:#f07cbf; --int:#6ed39a; --sys:#ab95ff;
+  --ok:#6ed39a; --ok-bg:#15301f; --bad:#ff8a80; --bad-bg:#3a1a19; --warn-bg:#33270f; --warn:#f0c46a;
+  --code-bg:#0b1017; --code-ink:#d6e0ee; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+code,kbd,.mono{font-family:var(--f-mono);font-size:.88em}
+p code,li code,td code,.opt code{background:var(--code-bg);color:var(--code-ink);padding:.05em .35em;border-radius:4px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);color:var(--code-ink);font-family:var(--f-mono);font-size:13.5px;line-height:1.6;
+  padding:14px 16px;border-radius:8px;overflow-x:auto;margin:0;border:1px solid var(--line)}
+pre .c{color:var(--muted)}
+pre .k{color:var(--accent);font-weight:600}
+pre .h{background:color-mix(in srgb,var(--gpio) 22%,transparent);border-radius:3px}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.25;text-wrap:balance;margin:0}
+h2{font-size:clamp(26px,3.4vw,34px);font-weight:700;letter-spacing:.005em}
+h3{font-size:21px;font-weight:600;margin-top:8px}
+h4{font-size:17px;font-weight:600}
+p{margin:0}
+ul,ol{margin:0;padding-left:1.3em}
+li+li{margin-top:4px}
+.label{font-family:var(--f-display);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+.mast{max-width:1240px;margin:0 auto;padding-block:36px 26px;display:grid;gap:18px}
+.mast .eyebrow{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.mast h1{font-size:clamp(34px,5.6vw,58px);font-weight:700;letter-spacing:-.005em;max-width:20ch}
+.mast h1 .sub{display:block;font-size:.42em;font-weight:500;color:var(--muted);letter-spacing:.02em;margin-top:8px}
+.mast .lede{max-width:68ch;color:var(--muted);font-size:17px}
+.chans{display:flex;flex-wrap:wrap;gap:8px}
+.chan{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);
+  border-radius:999px;padding:3px 12px 3px 6px;font-family:var(--f-display);font-size:13.5px;font-weight:600;text-decoration:none;color:var(--ink)}
+.chan i{font-style:normal;font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:999px;color:var(--surface);background:var(--c)}
+.chan:hover{border-color:var(--c)}
+.c-gpio{--c:var(--gpio)} .c-uart{--c:var(--uart)} .c-adc{--c:var(--adc)} .c-int{--c:var(--int)} .c-sys{--c:var(--sys)}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:28px;padding-bottom:80px}
+.toc{min-width:0}
+@media (min-width:980px){.shell{grid-template-columns:220px minmax(0,1fr)}}
+.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line)}
+.toc ol{list-style:none;padding:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.toc ol::-webkit-scrollbar{display:none}
+.toc li+li{margin:0}
+.toc a{display:flex;gap:8px;align-items:center;white-space:nowrap;text-decoration:none;color:var(--ink);font-size:14.5px;
+  padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.toc a b{width:8px;height:8px;border-radius:50%;background:var(--c,var(--muted));flex:none}
+.toc a:hover,.toc a:focus-visible{border-color:var(--c,var(--accent))}
+@media (min-width:980px){
+  .toc{top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;margin:0;padding:0;border:0;background:transparent}
+  .toc ol{flex-direction:column;overflow:visible;gap:2px}
+  .toc a{border:0;background:transparent;border-radius:6px;padding:6px 10px;white-space:normal}
+  .toc a:hover{background:var(--sunk)}
+  .toc .label{display:block;margin:0 0 8px 10px}
+}
+.toc .label{display:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+main{min-width:0;display:grid;gap:56px}
+
+/* ---------- sections ---------- */
+section.topic{display:grid;gap:22px;min-width:0}
+.topic-head{display:grid;gap:8px;padding-top:14px;border-top:3px solid var(--c,var(--ink))}
+.topic-head .label{color:var(--c,var(--muted))}
+.topic-head p{color:var(--muted);max-width:70ch}
+.block{display:grid;gap:12px;min-width:0}
+.block>p,.block>ul,.block>ol{max-width:72ch}
+.two{display:grid;gap:18px;grid-template-columns:1fr}
+@media (min-width:860px){.two{grid-template-columns:1fr 1fr}}
+.two>*{min-width:0}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.55}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-display);font-weight:600;font-size:13.5px;background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+
+.note{border-left:3px solid var(--c,var(--accent));background:var(--surface);padding:12px 16px;border-radius:0 8px 8px 0;max-width:78ch}
+.note.trap{--c:var(--bad);background:var(--bad-bg)}
+.note.tip{--c:var(--ok);background:var(--ok-bg)}
+.note .label{display:block;margin-bottom:2px;color:var(--c)}
+.formula{font-family:var(--f-mono);font-size:15px;background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:10px 14px;overflow-x:auto;white-space:nowrap}
+
+/* register strip */
+.reg{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:10px 12px 12px}
+.reg .rname{font-family:var(--f-mono);font-size:13px;font-weight:600;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.reg .rname span{color:var(--muted);font-weight:400}
+.reg .grid{display:grid;min-width:var(--minw,640px)}
+.reg .bit{font-family:var(--f-mono);font-size:10px;color:var(--muted);text-align:center;padding-bottom:2px}
+.reg .fld{font-family:var(--f-mono);font-size:11px;text-align:center;border:1px solid var(--line);margin-left:-1px;padding:6px 2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--surface)}
+.reg .fld.rsv{background:repeating-linear-gradient(135deg,var(--sunk) 0 4px,transparent 4px 8px);color:var(--muted)}
+.reg .fld.hl{background:color-mix(in srgb,var(--c,var(--accent)) 20%,var(--surface));border-color:var(--c,var(--accent));font-weight:600;position:relative;z-index:1}
+
+/* waveform */
+.wave{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:10px;overflow-x:auto}
+.wave svg{display:block;min-width:640px;width:100%;height:auto}
+
+/* flow diagram */
+.flow{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:760px){.flow{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lane{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:12px 14px;display:grid;gap:8px;align-content:start}
+.lane h4{font-size:15px}
+.lane .step{font-size:14px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;background:var(--bg)}
+.lane .step b{font-family:var(--f-mono);font-size:12.5px}
+
+/* cheat sheet */
+.cheat{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.cheat .card{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--c,var(--accent));border-radius:8px;padding:12px 14px;display:grid;gap:6px;align-content:start}
+.cheat .card .k{font-family:var(--f-mono);font-size:13.5px}
+.cheat .card p{font-size:14px;color:var(--muted)}
+
+/* ---------- quiz ---------- */
+.qbar{padding:12px 0;border-block:1px solid var(--line);display:grid;gap:10px}
+.qbar label{font-size:14px;color:var(--muted)}
+.pill{position:fixed;z-index:6;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  background:var(--accent);color:var(--accent-ink);text-decoration:none;font-family:var(--f-display);font-weight:600;font-size:14px;
+  padding:8px 14px;border-radius:999px;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
+.pill b{font-size:16px}
+.qrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font-family:var(--f-display);font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:999px;padding:4px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--c,var(--accent));border-color:var(--c,var(--accent));color:var(--surface)}
+.chip:focus-visible,.opt:focus-visible,.btn:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font-family:var(--f-display);font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.danger{color:var(--bad)}
+select{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:4px 8px}
+.score{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted)}
+.score b{color:var(--ink);font-family:var(--f-display);font-size:17px}
+.score .big b{font-size:22px;color:var(--accent)}
+.breakdown{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.bk{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;display:grid;gap:4px}
+.bk .bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;display:flex}
+.bk .bar i{display:block;height:100%}
+.bk .bar .g{background:var(--ok)} .bk .bar .r{background:var(--bad)}
+
+.qlist{display:grid;gap:18px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 16px;display:grid;gap:12px;min-width:0;border-left:4px solid var(--c)}
+.q .qh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.q .qh .qt{margin-left:auto}
+.q .qn{font-family:var(--f-display);font-weight:700;font-size:18px}
+.q .qt{font-family:var(--f-display);font-size:12.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.q .prompt{font-size:16.5px;max-width:78ch}
+.opts{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.opt>span:last-child{min-width:0;overflow-wrap:anywhere}
+.q>*{min-width:0}
+.opt{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start;text-align:left;font:inherit;font-size:15.5px;line-height:1.6;
+  background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer}
+.opt:hover:not([disabled]){border-color:var(--c)}
+.opt .L{font-family:var(--f-display);font-weight:700;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);font-size:15px}
+.opt[disabled]{cursor:default}
+.opt.right{background:var(--ok-bg);border-color:var(--ok)}
+.opt.right .L{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.opt.wrong .L{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.opt .why-no{display:block;font-size:14px;color:var(--muted);margin-top:4px}
+.opt:not(.show-note) .why-no{display:none}
+.ans{display:grid;gap:10px;border-top:1px dashed var(--line);padding-top:12px}
+.verdict{font-family:var(--f-display);font-weight:700;font-size:16px}
+.verdict.ok{color:var(--ok)} .verdict.no{color:var(--bad)}
+.written{background:var(--sunk);border-radius:8px;padding:12px 14px;max-width:80ch}
+.written .label{display:block;margin-bottom:4px}
+.qfoot{display:flex;gap:8px;flex-wrap:wrap}
+.empty{color:var(--muted);text-align:center;padding:30px}
+
+/* exam cover (mirrors the paper's first page) */
+.cover{background:var(--surface);border:1px solid var(--ink);border-radius:4px;display:grid}
+.cover-head{padding:14px 18px;border-bottom:1px dotted var(--muted);display:grid;gap:2px;font-size:15px}
+.cover-body{padding:14px 18px 18px;display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:860px){.cover-body{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start}}
+.cover-body ol{font-size:15px}
+.cover-body .label{display:block;margin-bottom:6px;color:var(--ink);text-decoration:underline}
+.scoretbl td:nth-child(3),.scoretbl td:nth-child(4){text-align:right;font-variant-numeric:tabular-nums}
+.scoretbl tr.total td{font-weight:700;background:var(--sunk)}
+.scoretbl td b{font-family:var(--f-display)}
+
+/* answer sheet bits */
+.qsec{font-family:var(--f-display);font-weight:700;font-size:20px;padding:10px 0 2px;border-bottom:2px solid var(--c);color:var(--ink);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.qsec span{font-size:14px;font-weight:600;color:var(--muted)}
+.opt.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.opt.sel .L{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.reason{display:grid;gap:6px}
+.reason label{font-size:14px;color:var(--muted)}
+.reason textarea{font:inherit;font-size:15px;line-height:1.6;min-height:84px;resize:vertical;width:100%;border:1px solid var(--line);border-radius:8px;
+  padding:10px 12px;background:var(--bg);color:var(--ink);background-image:repeating-linear-gradient(transparent 0 calc(1.6em - 1px),var(--line) calc(1.6em - 1px) 1.6em);background-attachment:local;background-position:0 10px}
+.reason textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.reason textarea[readonly]{opacity:.85}
+.submit{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.submit[disabled]{opacity:.45;cursor:not-allowed}
+.keys{display:grid;gap:4px;margin:0;padding-left:1.2em}
+.mine{border-left:3px solid var(--muted);padding:6px 12px;color:var(--muted);font-size:14.5px;white-space:pre-wrap;max-width:80ch}
+.grade{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grade .btn[aria-pressed="true"].yes{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.grade .btn[aria-pressed="true"].no{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.pts{font-family:var(--f-display);font-weight:700;font-size:15px;padding:2px 10px;border-radius:999px;border:1px solid var(--line)}
+.pts.p2{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+.pts.p0{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.pts.pw{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+footer.foot{max-width:1240px;margin:0 auto;padding-block:20px 40px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="eyebrow"><span class="label">EN813202 Microprocessors and Interfacing · ปลายภาค ภาคต้น 2569 · STM32 · CMSIS + อ่านโค้ด HAL</span></div>
+  <h1>เตรียมสอบ GPIO · UART · ADC · Interrupt<span class="sub">สรุปเนื้อหาแบบ CMSIS ที่เรียนมา พร้อมตารางแปลโค้ด HAL และข้อสอบจำลอง 70 ข้อ 140 คะแนน</span></h1>
+  <p class="lede">อาจารย์ยืนยันว่าข้อสอบ<b>ไม่ให้เขียนโค้ด</b> แต่จะมีโค้ดให้อ่านแล้วเข้าใจการทำงาน เนื้อหาหน้านี้จึงยึด CMSIS (register-level) ตามสไลด์ Chapter 1 และ 3 ที่เรียนมาเป็นหลัก ส่วนหัวข้อ “อ่านโค้ด HAL ให้ออก” มีไว้แปลชื่อฟังก์ชัน HAL เป็น register ที่รู้จักเผื่อโจทย์ใช้ HAL ไม่ต้องท่องจำ ส่วน ADC และ Interrupt เรียบเรียงจาก Reference Manual RM0383 ถ้าอาจารย์ใช้สัญลักษณ์ต่างไป ให้ยึดตามที่สอน</p>
+  <nav class="chans" aria-label="หัวข้อ">
+    <a class="chan c-gpio" href="#gpio"><i>1</i>GPIO · 15 ข้อ</a>
+    <a class="chan c-uart" href="#uart"><i>2</i>UART · 20 ข้อ</a>
+    <a class="chan c-adc" href="#adc"><i>3</i>ADC · 20 ข้อ</a>
+    <a class="chan c-int" href="#int"><i>4</i>Interrupt · 15 ข้อ</a>
+    <a class="chan" href="#exam" style="--c:var(--accent)"><i>70</i>ข้อสอบจำลอง</a>
+  </nav>
+</header>
+
+<div class="shell">
+<nav class="toc" aria-label="สารบัญ">
+  <span class="label">สารบัญ</span>
+  <ol>
+    <li><a href="#rules"><b></b>รูปแบบข้อสอบ</a></li>
+    <li><a href="#gpio" style="--c:var(--gpio)"><b></b>1 · GPIO</a></li>
+    <li><a href="#uart" style="--c:var(--uart)"><b></b>2 · UART</a></li>
+    <li><a href="#adc" style="--c:var(--adc)"><b></b>3 · ADC</a></li>
+    <li><a href="#int" style="--c:var(--int)"><b></b>4 · Interrupt</a></li>
+    <li><a href="#sys" style="--c:var(--int)"><b></b>4.7 · ออกแบบระบบรวม</a></li>
+    <li><a href="#cheat"><b></b>คิดเลขโดยไม่ใช้เครื่องคิดเลข</a></li>
+    <li><a href="#exam" style="--c:var(--accent)"><b></b>ข้อสอบจำลอง 70 ข้อ</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================= RULES ================= -->
+<section class="topic" id="rules" style="--c:var(--accent)">
+  <div class="topic-head">
+    <span class="label">ก่อนเริ่ม</span>
+    <h2>รูปแบบข้อสอบและวิธีเขียนเหตุผลให้ได้คะแนน</h2>
+    <p>ข้อสอบมี 70 ข้อ ข้อละ 2 คะแนน รวม 140 คะแนน ต้องตอบถูก<b>และ</b>เขียนเหตุผลถูก ถ้าไม่มีเหตุผลหรือเหตุผลผิดมากจะไม่ได้คะแนน ห้ามนำเอกสารหรือเครื่องคิดเลขเข้าห้องสอบ และ<b>ไม่ได้ให้เขียนโค้ด</b> แต่มีโค้ดให้อ่านว่าทำงานอย่างไร</p>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>สัดส่วนข้อสอบ</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>ข้อ</th><th>โจทย์</th><th>จำนวน</th><th>คะแนน</th></tr></thead>
+        <tbody class="num">
+          <tr><td>1.</td><td>GPIO</td><td>15 ข้อ</td><td>30</td></tr>
+          <tr><td>2.</td><td>UART</td><td>20 ข้อ</td><td>40</td></tr>
+          <tr><td>3.</td><td>ADC</td><td>20 ข้อ</td><td>40</td></tr>
+          <tr><td>4.</td><td>Interrupt</td><td>15 ข้อ</td><td>30</td></tr>
+          <tr><td></td><td><b>รวม</b></td><td>70 ข้อ</td><td><b>140</b></td></tr>
+        </tbody>
+      </table></div>
+      <p>เวลาเฉลี่ยต่อข้อมีน้อย ข้อที่เป็นการคิดเลขควรใช้ค่าที่ท่องไว้ในหัวข้อ “คิดเลขโดยไม่ใช้เครื่องคิดเลข”</p>
+    </div>
+    <div class="block">
+      <h3>ข้อกำหนดฮาร์ดแวร์ในข้อสอบ</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>อุปกรณ์</th><th>STM32 Pin</th><th>การใช้งาน</th><th>ตั้งค่า (CMSIS)</th></tr></thead>
+        <tbody>
+          <tr><td>LED</td><td class="mono">PA5</td><td>Output, Active High</td><td class="mono">MODER5 = 01, OT5 = 0</td></tr>
+          <tr><td>Push Button</td><td class="mono">PC13</td><td>Input, Active Low</td><td class="mono">MODER13 = 00 · กด → IDR13 = 0 · EXTI15_10</td></tr>
+          <tr><td>UART TX</td><td class="mono">PA2</td><td>USART2_TX</td><td class="mono">MODER2 = 10, AFR[0] = 7</td></tr>
+          <tr><td>UART RX</td><td class="mono">PA3</td><td>USART2_RX</td><td class="mono">MODER3 = 10, AFR[0] = 7</td></tr>
+          <tr><td>Potentiometer</td><td class="mono">PA0</td><td>ADC1_IN0</td><td class="mono">MODER0 = 11 · SQ1 = 0</td></tr>
+          <tr><td>Supply Voltage</td><td class="mono">3.3 V</td><td>VREF+ = 3.3 V</td><td class="mono">raw × 3.3 / 4095</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>โครงเหตุผลที่ผู้ตรวจอ่านง่าย</h3>
+      <ol>
+        <li><b>ตอบ</b> ตัวเลือกที่เลือก</li>
+        <li><b>หลักการ</b> 1 ประโยค: กลไก, register หรือฟังก์ชันที่เกี่ยว เช่น “UART ส่ง LSB first และ start = 0, stop = 1”</li>
+        <li><b>ลงมือคิด</b>: แทนค่าหรือไล่บิตให้เห็นที่มาของคำตอบ</li>
+        <li><b>ตัดตัวลวง</b> 1 ประโยคสำหรับตัวเลือกที่ใกล้ที่สุด (ถ้ามีที่ว่าง)</li>
+      </ol>
+      <div class="note tip"><span class="label">ตัวอย่าง</span>ตอบ ค · UART ส่ง start bit = 0 ตามด้วย data แบบ LSB first และปิดด้วย stop = 1 · 0x43 = 0100 0011 อ่านจาก bit0 ได้ 1100 0010 · ข้อ ข ส่ง MSB first จึงผิด</div>
+    </div>
+    <div class="block">
+      <h3>3 คำถามที่ใช้ตัดตัวเลือกเชิงระบบ</h3>
+      <ol>
+        <li><b>ใครเป็นคนกำหนดเวลา?</b> ฮาร์ดแวร์ (timer, TRGO, DMA) แม่นกว่า ISR และ ISR แม่นกว่า for-loop delay</li>
+        <li><b>อะไรบล็อกอะไร?</b> for-loop delay, การวนรอ TXE/RXNE และการวนรอ EOC เป็น blocking (HAL_Delay, HAL_UART_Transmit, HAL_ADC_PollForConversion ก็เช่นกัน) ถ้าอยู่ในเส้นทางเดียวกับงานที่ต้องตอบเร็ว ตัวเลือกนั้นมักผิด</li>
+        <li><b>ISR สั้นไหม?</b> ISR ที่ดีจะล้าง flag, เก็บค่า, ตั้ง flag แล้วออก ถ้ามี sprintf, ส่ง string หรือ delay อยู่ใน ISR (หรือใน HAL …Callback ซึ่งก็ทำงานใน ISR) มักเป็นตัวลวง</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GPIO ================= -->
+<section class="topic" id="gpio" style="--c:var(--gpio)">
+  <div class="topic-head">
+    <span class="label">CH1 · Chapter 1</span>
+    <h2>GPIO</h2>
+    <p>ขาแต่ละขา (pin 0–15) อยู่ในพอร์ต (GPIOA, GPIOB, …) เช่น PA5 = พอร์ต A ขา 5 แต่ละพอร์ตมีชุด register ของตัวเอง</p>
+  </div>
+
+  <div class="block">
+    <h3>1.1 โหมดของขา 4 แบบ</h3>
+    <div class="tbl"><table>
+      <thead><tr><th></th><th>Input (00)</th><th>Output (01)</th><th>Alternate function (10)</th><th>Analog (11)</th></tr></thead>
+      <tbody>
+        <tr><td>Output buffer</td><td>ปิด</td><td>เปิด (push-pull / open-drain)</td><td>เปิด</td><td>ปิด</td></tr>
+        <tr><td>ใครขับขา</td><td>–</td><td>ODR</td><td>Peripheral (เช่น USART)</td><td>–</td></tr>
+        <tr><td>Pull-up/down</td><td>ใช้ได้</td><td>ใช้ได้</td><td>ใช้ได้</td><td><b>ปิดเสมอ</b></td></tr>
+        <tr><td>อ่าน IDR ได้</td><td>สถานะขา</td><td>สถานะขา</td><td>สถานะขา</td><td><b>0 เสมอ</b> (Schmitt trigger ปิด)</td></tr>
+        <tr><td>อ่าน ODR ได้</td><td>–</td><td>ค่าที่เขียนล่าสุด</td><td>–</td><td>–</td></tr>
+        <tr><td>สัญญาณเข้าไปที่</td><td>IDR</td><td>IDR</td><td>Peripheral</td><td>ADC (ขาไม่ทน 5 V)</td></tr>
+      </tbody>
+    </table></div>
+    <div class="two">
+      <div class="tbl"><table>
+        <thead><tr><th>ค่าใน ODR</th><th>Push-pull</th><th>Open-drain</th></tr></thead>
+        <tbody><tr><td>0</td><td>เปิด N-MOS → 0 V</td><td>เปิด N-MOS → 0 V</td></tr>
+        <tr><td>1</td><td>เปิด P-MOS → VDD</td><td><b>High-Z</b> (ลอย) ต้องมี pull-up ภายนอก</td></tr></tbody>
+      </table></div>
+      <div class="note trap"><span class="label">กับดัก</span>Open-drain จ่ายกระแสออกจากขาไม่ได้ ถ้า LED ต่อจากขาลง GND จะไม่ติดเลยทั้งสองสถานะ Open-drain ใช้กับ bus ที่มีหลายตัวขับร่วมกัน (เช่น I²C) หรือต่อ pull-up ไปแรงดันอื่น</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>1.2 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <p>ไม่ต้องท่อง ใช้เป็นพจนานุกรม: ถ้าโจทย์ให้โค้ด HAL ให้แปลแต่ละบรรทัดเป็น register ที่เรียนมาตามตารางนี้ แล้ววิเคราะห์แบบเดิม</p>
+    <div class="two">
+      <pre><span class="c">/* MX_GPIO_Init() ที่ CubeMX สร้าง (ย่อ) */</span>
+__HAL_RCC_GPIOA_CLK_ENABLE();          <span class="c">// clock ก่อนเสมอ</span>
+__HAL_RCC_GPIOC_CLK_ENABLE();
+GPIO_InitTypeDef g = {0};
+
+g.Pin   = GPIO_PIN_5;                  <span class="c">// LED, active high</span>
+g.Mode  = GPIO_MODE_OUTPUT_PP;
+g.Pull  = GPIO_NOPULL;
+g.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(GPIOA, &g);
+
+g.Pin  = GPIO_PIN_13;                  <span class="c">// ปุ่ม, active low</span>
+g.Mode = GPIO_MODE_INPUT;              <span class="c">// หรือ GPIO_MODE_IT_FALLING</span>
+g.Pull = GPIO_NOPULL;                  <span class="c">// บอร์ดมี pull-up ภายนอก</span>
+HAL_GPIO_Init(GPIOC, &g);
+
+<span class="c">/* ใช้งาน */</span>
+<span class="k">if</span> (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET)
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+HAL_Delay(500);                        <span class="c">// blocking, หน่วย ms</span>
+uint32_t now = HAL_GetTick();          <span class="c">// ms ตั้งแต่บูต</span></pre>
+      <div class="tbl"><table>
+        <thead><tr><th>HAL</th><th>register ที่ถูกเขียน</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">__HAL_RCC_GPIOx_CLK_ENABLE()</td><td>RCC_AHB1ENR บิต GPIOxEN</td></tr>
+          <tr><td class="mono">GPIO_MODE_INPUT</td><td>MODER = 00</td></tr>
+          <tr><td class="mono">GPIO_MODE_OUTPUT_PP / _OD</td><td>MODER = 01, OTYPER = 0 / 1</td></tr>
+          <tr><td class="mono">GPIO_MODE_AF_PP + Alternate</td><td>MODER = 10, AFRL/AFRH = AF number</td></tr>
+          <tr><td class="mono">GPIO_MODE_ANALOG</td><td>MODER = 11</td></tr>
+          <tr><td class="mono">GPIO_MODE_IT_FALLING</td><td>MODER = 00 + SYSCFG_EXTICR + EXTI IMR/FTSR</td></tr>
+          <tr><td class="mono">Pull NOPULL / PULLUP / PULLDOWN</td><td>PUPDR = 00 / 01 / 10</td></tr>
+          <tr><td class="mono">Speed LOW … VERY_HIGH</td><td>OSPEEDR = 00 … 11</td></tr>
+          <tr><td class="mono">HAL_GPIO_WritePin</td><td>BSRR (set บิต y, reset บิต y+16)</td></tr>
+          <tr><td class="mono">HAL_GPIO_ReadPin</td><td>อ่าน IDR บิต y → GPIO_PIN_SET/RESET</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>1.3 Register map และตำแหน่งบิต (CMSIS)</h3>
+    <p><b>Register address = Peripheral base + Offset</b> โดย GPIOA = <code>0x4002 0000</code> และแต่ละพอร์ตห่างกัน <code>0x400</code> (GPIOB = <code>0x4002 0400</code>, GPIOC = <code>0x4002 0800</code>) ส่วน RCC = <code>0x4002 3800</code> ทำให้ RCC_AHB1ENR อยู่ที่ <code>0x4002 3830</code></p>
+    <div class="tbl"><table>
+      <thead><tr><th>Offset</th><th>Register</th><th>บิตต่อขา</th><th>ตำแหน่งของขา y</th><th>ค่า</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0x00</td><td class="mono">MODER</td><td>2</td><td class="mono">[2y+1 : 2y]</td><td>00 in · 01 out · 10 AF · 11 analog</td></tr>
+        <tr><td class="mono">0x04</td><td class="mono">OTYPER</td><td>1</td><td class="mono">[y]</td><td>0 push-pull · 1 open-drain</td></tr>
+        <tr><td class="mono">0x08</td><td class="mono">OSPEEDR</td><td>2</td><td class="mono">[2y+1 : 2y]</td><td>00 low · 01 medium · 10 fast · 11 high</td></tr>
+        <tr><td class="mono">0x0C</td><td class="mono">PUPDR</td><td>2</td><td class="mono">[2y+1 : 2y]</td><td>00 none · 01 pull-up · 10 pull-down · 11 reserved</td></tr>
+        <tr><td class="mono">0x10</td><td class="mono">IDR</td><td>1</td><td class="mono">[y]</td><td>อ่านอย่างเดียว (word access)</td></tr>
+        <tr><td class="mono">0x14</td><td class="mono">ODR</td><td>1</td><td class="mono">[y]</td><td>อ่าน/เขียน</td></tr>
+        <tr><td class="mono">0x18</td><td class="mono">BSRR</td><td>2 (BS, BR)</td><td class="mono">BSy=[y], BRy=[y+16]</td><td>เขียน 1 = set/reset แบบ atomic, เขียน 0 = ไม่มีผล</td></tr>
+        <tr><td class="mono">0x20</td><td class="mono">AFRL = AFR[0]</td><td>4</td><td class="mono">[4y+3 : 4y], y = 0–7</td><td>AF0–AF15</td></tr>
+        <tr><td class="mono">0x24</td><td class="mono">AFRH = AFR[1]</td><td>4</td><td class="mono">[4(y−8)+3 : 4(y−8)], y = 8–15</td><td>AF0–AF15</td></tr>
+      </tbody>
+    </table></div>
+    <div class="reg" data-reg="moder" style="--c:var(--gpio)"></div>
+    <p>ตัวอย่าง: PA5 ใช้ MODER บิต 11:10, PB4 ใช้ PUPDR บิต 9:8, PB10 ใช้ AFR[1] บิต 11:8</p>
+  </div>
+
+  <div class="block">
+    <h3>1.4 Clear-before-set และ macro ใน stm32f4xx.h</h3>
+    <div class="two">
+      <pre><span class="c">/* PA5 → output, push-pull, low speed, ON */</span>
+RCC->AHB1ENR  |= RCC_AHB1ENR_GPIOAEN;      <span class="c">// clock ก่อนเสมอ</span>
+GPIOA->MODER  &= ~GPIO_MODER_MODER5;       <span class="c">// ล้าง 2 บิต (11:10)</span>
+GPIOA->MODER  |= (0b01 << GPIO_MODER_MODER5_Pos);
+GPIOA->OTYPER &= ~GPIO_OTYPER_OT5;         <span class="c">// push-pull</span>
+GPIOA->OSPEEDR&= ~GPIO_OSPEEDR_OSPEED5;    <span class="c">// low speed</span>
+GPIOA->ODR    |= GPIO_ODR_OD5;             <span class="c">// HIGH</span></pre>
+      <div class="block">
+        <p><code>GPIO_MODER_MODER5</code> คือ mask ของทั้งฟิลด์ = <code>0b11 &lt;&lt; 10</code> ส่วน <code>GPIO_MODER_MODER5_Pos</code> = 10 คือตำแหน่งบิต</p>
+        <div class="note trap"><span class="label">กับดักจาก Appendix 1</span>ถ้า MODER เดิมเป็น <code>0xFFFFFFFF</code> แล้วสั่ง <code>|= (0b01 &lt;&lt; 6)</code> จะได้ PA3 = 11 (analog) เหมือนเดิม เพราะ OR ทำให้บิตเป็น 0 ไม่ได้ ต้อง <code>&amp;= ~(0b11 &lt;&lt; 6)</code> ก่อน</div>
+        <div class="note trap"><span class="label">กับดัก</span><code>GPIOA->MODER |= GPIO_MODER_MODER5;</code> ตั้งทั้งสองบิตเป็น 1 → PA5 กลายเป็น analog ไม่ใช่ output</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>1.5 Clock gating</h3>
+    <p>Peripheral ทุกตัวเป็นวงจร synchronous ต้องมี clock ถึงจะทำงาน ถ้าไม่เปิด clock ใน RCC จะเข้าถึง register ไม่ได้หรืออ่านได้ค่าผิด และใช้ peripheral ไม่ได้ ข้อดีของ clock gating คือลด dynamic power</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Register</th><th>Bus</th><th>ตัวที่ใช้บ่อย</th><th>HAL macro</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">RCC->AHB1ENR</td><td>AHB1</td><td>GPIOAEN, GPIOBEN, GPIOCEN, DMA1EN, DMA2EN</td><td class="mono">__HAL_RCC_GPIOA_CLK_ENABLE()</td></tr>
+        <tr><td class="mono">RCC->APB1ENR</td><td>APB1</td><td>USART2EN, TIM2EN–TIM5EN, I2C1EN</td><td class="mono">__HAL_RCC_USART2_CLK_ENABLE()</td></tr>
+        <tr><td class="mono">RCC->APB2ENR</td><td>APB2</td><td>ADC1EN, SYSCFGEN (จำเป็นสำหรับ EXTI), USART1EN, USART6EN, TIM1EN</td><td class="mono">__HAL_RCC_ADC1_CLK_ENABLE()</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>1.6 Input, pull-up/pull-down และการอ่านปุ่ม</h3>
+    <div class="two">
+      <div class="block">
+        <p>ขา input เป็น high impedance ถ้าไม่ต่ออะไร แรงดันจะลอย อ่านได้ 0/1 สุ่ม จึงต้องมี pull-up (ต่อ VDD ทำให้ค่าเริ่มต้นเป็น 1) หรือ pull-down (ต่อ GND ทำให้ค่าเริ่มต้นเป็น 0)</p>
+        <p>ปุ่ม PC13 ในข้อสอบเป็น <b>active low</b> (บอร์ดมีตัวต้านทาน pull-up ภายนอก): ไม่กดอ่านได้ 1 (GPIO_PIN_SET) กดแล้วอ่านได้ 0 (GPIO_PIN_RESET) ส่วน LED PA5 เป็น <b>active high</b>: SET = ติด</p>
+        <p>ปุ่ม PB4 บน shield ใน lab ก็เป็น hardware pull-up เช่นกัน จึงตั้ง PUPDR = 01</p>
+      </div>
+      <pre><span class="c">/* HAL: กด PC13 → LED PA5 ติด */</span>
+<span class="k">if</span> (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET)
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+<span class="k">else</span>
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+
+<span class="c">/* CMSIS แบบเดียวกัน */</span>
+<span class="k">if</span> ((GPIOC->IDR & GPIO_IDR_ID13) == 0) GPIOA->BSRR = GPIO_BSRR_BS5;
+<span class="k">else</span>                                   GPIOA->BSRR = GPIO_BSRR_BR5;
+
+<span class="c">/* ผิด: == มาก่อน & → IDR & (0x2000==0) = 0 เสมอ */</span>
+<span class="k">if</span> (GPIOC->IDR & GPIO_IDR_ID13 == 0) { ... }</pre>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>1.7 ODR กับ BSRR</h3>
+    <p><code>GPIOA->ODR |= …</code> เป็น read-modify-write (อ่าน → แก้ → เขียน 3 จังหวะ) ถ้า interrupt มาแก้ ODR ระหว่างนั้น ค่าอาจถูกเขียนทับ ส่วน <code>GPIOA->BSRR = (1U &lt;&lt; 5)</code> (set PA5) และ <code>GPIOA->BSRR = (1U &lt;&lt; 21)</code> (reset PA5) เป็นการเขียนครั้งเดียวที่ไม่กระทบขาอื่น Toggle ใช้ <code>GPIOA->ODR ^= GPIO_ODR_OD5</code></p>
+  </div>
+
+  <div class="block">
+    <h3>1.8 Polling, blocking function และ for-loop delay</h3>
+    <div class="formula">t = DELAY_THRESHOLD × 12 / 16,000,000 &nbsp;→&nbsp; 1 รอบ = 750 ns &nbsp;→&nbsp; 1 s ≈ 1,333,333 รอบ</div>
+    <p>สไลด์หน้า 34 พิมพ์ตัวหารเป็น 1,600,000 ซึ่งพิมพ์ผิด ผลลัพธ์ 750 ns ที่ถูกมาจากการหารด้วย 16,000,000</p>
+    <ul>
+      <li><b>Polling</b>: CPU วนเช็คสถานะเอง (เหมือนเดินไปดูว่าคนส่งอาหารมาหรือยังเป็นระยะ) ส่วน <b>Interrupt</b> คือให้ event มาเรียก CPU เอง</li>
+      <li><b>Blocking function</b>: ไปบรรทัดถัดไปไม่ได้จนกว่าเงื่อนไขจะเป็นจริง เช่น for-loop delay และการรอ TXE หรือ RXNE</li>
+      <li>อันตรายของ blocking: พลาด deadline หรือ event, watchdog reset, และกินไฟเพราะ CPU ไม่ได้ sleep</li>
+      <li>Lab 1.5: LED PA5 toggle แล้ว delay 1 s → กระพริบ 0.5 Hz (คาบ 2 s) และปุ่ม PB4 ตอบช้าได้ถึง ≈1 s</li>
+      <li><b>HAL_Delay(ms)</b> ก็เป็น blocking: วนรอจน <code>HAL_GetTick()</code> (นับโดย SysTick interrupt ทุก 1 ms) เพิ่มครบ ความถี่กระพริบ = 1 / (2 × delay) เช่น toggle + HAL_Delay(250) = 2 Hz</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= UART ================= -->
+<section class="topic" id="uart" style="--c:var(--uart)">
+  <div class="topic-head">
+    <span class="label">CH2 · Chapter 3</span>
+    <h2>UART</h2>
+    <p>Universal Asynchronous Receiver Transmitter: serial (ส่งทีละบิต) แบบ asynchronous (ไม่มี clock ร่วม) ใช้ 2 สาย Tx และ Rx บน Nucleo USART2 ต่อกับ ST-Link ที่ PA2 (TX) และ PA3 (RX) และแปลงเป็น USB Virtual COM port</p>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>2.1 พื้นฐานการสื่อสาร</h3>
+      <ul>
+        <li><b>Parallel</b>: ส่งหลายบิตพร้อมกันหลายสาย เร็วแต่ใช้สายมาก <b>Serial</b>: ส่งทีละบิต ใช้สายน้อยกว่า ส่งระยะไกลได้ดีกว่า</li>
+        <li><b>Synchronous</b>: มีสาย clock ร่วม receiver รู้จุด sample จาก clock <b>Asynchronous</b>: ไม่มี clock ทั้งสองฝั่งต้องตกลง <b>baud rate</b> เดียวกัน</li>
+        <li><b>Bit time</b> = 1 / baud เช่น 9600 → 104.17 µs, 115200 → 8.68 µs</li>
+        <li><b>Oversampling</b>: receiver สุ่มเร็วกว่า baud 16× (หรือ 8× เมื่อ OVER8 = 1) แล้วใช้ majority vote ตรงกลางบิต เพื่อทนสัญญาณรบกวนและการคลาดของ clock</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>2.2 Frame format</h3>
+      <ul>
+        <li>Idle = <b>1</b></li>
+        <li>Start bit = <b>0</b> (falling edge ใช้ sync)</li>
+        <li>Data 8 หรือ 9 บิต (บิต M) ส่ง <b>LSB first</b></li>
+        <li>Parity (ไม่บังคับ): even หรือ odd</li>
+        <li>Stop = <b>1</b> ยาว 1, 0.5, 2 หรือ 1.5 บิต (CR2 STOP = 00, 01, 10, 11) ถ้าตำแหน่ง stop ไม่ใช่ 1 จะเกิด <b>framing error</b></li>
+      </ul>
+      <div class="note"><span class="label">STM32</span>เมื่อเปิด parity (PCE = 1) บิตบนสุดของ word จะกลายเป็น parity เช่น M = 0 กับ PCE = 1 ได้ data 7 บิต + parity 1 บิต</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h4>ตัวอย่างจากสไลด์: ส่ง 'A' (0x41) แบบ 8 data, odd parity, 1 stop, 9600 bps</h4>
+    <div class="wave" id="wave"></div>
+    <p class="num">0x41 = 0100 0001 → ส่ง LSB ก่อน: 1 0 0 0 0 0 1 0 · มีบิต 1 อยู่ 2 ตัว odd parity จึงเติม 1 · รวม 11 บิต × 104.17 µs = <b>1.146 ms ต่อ frame</b></p>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>2.3 Parity</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>ตัวอักษร</th><th>Binary</th><th>จำนวน 1</th><th>Even</th><th>Odd</th></tr></thead>
+        <tbody class="num">
+          <tr><td>'D' 0x44</td><td class="mono">0100 0100</td><td>2</td><td>0</td><td>1</td></tr>
+          <tr><td>'t' 0x74</td><td class="mono">0111 0100</td><td>4</td><td>0</td><td>1</td></tr>
+          <tr><td>'K' 0x4B</td><td class="mono">0100 1011</td><td>4</td><td>0</td><td>1</td></tr>
+          <tr><td>'A' 0x41</td><td class="mono">0100 0001</td><td>2</td><td>0</td><td>1</td></tr>
+          <tr><td>'C' 0x43</td><td class="mono">0100 0011</td><td>3</td><td>1</td><td>0</td></tr>
+        </tbody>
+      </table></div>
+      <p>Parity ตรวจจับ error 1 บิตได้แต่แก้ไม่ได้ และตรวจ error 2 บิตไม่ได้ ถ้าต้องการตรวจที่แข็งแรงกว่านี้ใช้ CRC</p>
+    </div>
+    <div class="block">
+      <h3>2.4 Baud rate register</h3>
+      <div class="formula">USART_BRR = round( f_CLK / Baud )   (f_CLK = 16 MHz, OVER8 = 0)</div>
+      <div class="tbl"><table>
+        <thead><tr><th>Baud</th><th>f/baud</th><th>BRR</th><th>Hex</th></tr></thead>
+        <tbody class="num">
+          <tr><td>9600</td><td>1666.67</td><td>1667</td><td class="mono">0x683</td></tr>
+          <tr><td>19200</td><td>833.33</td><td>833</td><td class="mono">0x341</td></tr>
+          <tr><td>38400</td><td>416.67</td><td>417</td><td class="mono">0x1A1</td></tr>
+          <tr><td>57600</td><td>277.78</td><td>278</td><td class="mono">0x116</td></tr>
+          <tr><td>115200</td><td>138.89</td><td>139</td><td class="mono">0x8B</td></tr>
+        </tbody>
+      </table></div>
+      <p>ที่มาของสูตร: USARTDIV = f/(16 × baud) และ BRR เก็บ mantissa กับ fraction (หน่วย 1/16) จึงเท่ากับ USARTDIV × 16 = f/baud</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>2.5 Register และ flag ที่ต้องรู้</h3>
+    <div class="reg" data-reg="cr1" style="--c:var(--uart)"></div>
+    <div class="reg" data-reg="sr" style="--c:var(--uart)"></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Flag (SR)</th><th>ความหมายเมื่อ = 1</th><th>ล้างอย่างไร</th><th>Interrupt enable</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">TXE</td><td>DR ว่าง เขียนไบต์ถัดไปได้ (ไบต์เดิมเข้า shift register แล้ว แต่อาจยังส่งไม่จบ)</td><td>เขียน DR</td><td class="mono">TXEIE</td></tr>
+        <tr><td class="mono">TC</td><td>ส่ง frame สุดท้ายจบจริงแล้ว รวม stop bit</td><td>อ่าน SR แล้วเขียน DR หรือเขียน 0</td><td class="mono">TCIE</td></tr>
+        <tr><td class="mono">RXNE</td><td>มีข้อมูลรับเข้ามารออ่านใน DR</td><td>อ่าน DR</td><td class="mono">RXNEIE</td></tr>
+        <tr><td class="mono">ORE</td><td>Overrun: ไบต์ใหม่รับครบตอนที่ RXNE ยังเป็น 1 ไบต์ใหม่หาย ไบต์เก่าใน DR ยังอยู่</td><td>อ่าน SR แล้วอ่าน DR</td><td>RXNEIE (หรือ EIE)</td></tr>
+        <tr><td class="mono">FE / NF / PE</td><td>Framing error / Noise / Parity error</td><td>อ่าน SR แล้วอ่าน DR</td><td>EIE / PEIE</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>2.6 ตั้งค่า USART2 ครบชุด (Lab 3.1–3.4)</h3>
+    <div class="two">
+      <pre><span class="c">/* clock */</span>
+RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+<span class="c">/* PA2 = USART2_TX, PA3 = USART2_RX → AF7 */</span>
+GPIOA->MODER &= ~(GPIO_MODER_MODER2 | GPIO_MODER_MODER3);
+GPIOA->MODER |=  (0b10 << GPIO_MODER_MODER2_Pos)
+              |  (0b10 << GPIO_MODER_MODER3_Pos);
+GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL2 | GPIO_AFRL_AFRL3);
+GPIOA->AFR[0] |=  (7 << GPIO_AFRL_AFSEL2_Pos)
+              |  (7 << GPIO_AFRL_AFSEL3_Pos);
+<span class="c">/* USART2: 8N1, 115200 */</span>
+USART2->CR1 |=  USART_CR1_UE;          <span class="c">// step 1</span>
+USART2->CR1 &= ~USART_CR1_M;           <span class="c">// 8 data bits</span>
+USART2->CR2 &= ~USART_CR2_STOP;        <span class="c">// 1 stop</span>
+USART2->BRR  =  139;                   <span class="c">// 0x8B</span>
+USART2->CR1 |=  USART_CR1_TE | USART_CR1_RE;</pre>
+      <pre><span class="c">/* ส่ง string แบบ polling (Lab 3.2) */</span>
+<span class="k">static void</span> UART2_TxString(<span class="k">char</span> strOut[]){
+  <span class="k">for</span> (uint8_t idx = 0; strOut[idx] != '\0'; idx++){
+    <span class="k">while</span> ((USART2->SR & USART_SR_TXE) == 0);
+    USART2->DR = strOut[idx];
+  }
+}
+
+<span class="c">/* รับ 1 ไบต์แบบ polling (Lab 3.3) */</span>
+<span class="k">if</span> ((USART2->SR & USART_SR_RXNE) != 0) {
+  <span class="k">char</span> c = USART2->DR;     <span class="c">// อ่าน DR = ล้าง RXNE</span>
+  <span class="k">if</span> (c == '1')      GPIOA->ODR |= GPIO_ODR_OD5;
+  <span class="k">else if</span> (c == 'G') GPIOB->ODR ^= GPIO_ODR_OD6;
+}</pre>
+    </div>
+    <div class="note trap"><span class="label">กับดัก</span>ถ้าไม่รอ TXE ก่อนเขียน DR ไบต์จะถูกเขียนทับและหาย ถ้าใช้ blocking delay ระหว่างรอรับ จะเกิด ORE และไบต์ที่ตามมาหาย เพราะ USART ของ F411 ไม่มี FIFO</div>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>2.7 String และ sprintf</h3>
+      <ul>
+        <li>C ไม่มีชนิด string ใช้ char array ที่ปิดท้ายด้วย <code>'\0'</code></li>
+        <li><code>char s1[] = "Hi";</code> มีขนาด 3 ไบต์ ส่วน <code>char s2[10] = "Hi";</code> มีขนาด 10 ไบต์</li>
+        <li><code>sprintf(buf, "Sensor data = %d", v)</code> เขียนข้อความลง buf แต่ไม่ตรวจขนาด ถ้า buf เล็กเกินจะเกิด overflow ควรใช้ <code>snprintf(buf, sizeof buf, …)</code></li>
+        <li><code>"0x%02X"</code> ใช้แสดงเลขฐานสิบหก 2 หลัก เช่น "O2 Bank 1: 0x13"</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>2.8 Throughput</h3>
+      <div class="formula">bytes/s = baud / (บิตต่อ frame) → 115200 / 10 = 11,520 B/s</div>
+      <p>ถ้าแต่ละบรรทัดยาว 10 ไบต์ จะส่งได้ ≈1,152 บรรทัดต่อวินาที ที่ 9600 bps ข้อความ 100 ไบต์ใช้เวลา ≈104 ms ซึ่งเป็นเวลาที่ CPU ติดอยู่ ถ้าส่งแบบ blocking</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>2.9 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <p>HAL_UART_Transmit คือการวนรอ TXE แล้วเขียน DR ทีละไบต์แบบ Lab 3.2 ส่วนฟังก์ชันที่ลงท้าย _IT ใช้ TXEIE/RXNEIE และ _DMA ใช้ DMA ทำแทน CPU</p>
+    <div class="two">
+      <pre>huart2.Instance          = USART2;
+huart2.Init.BaudRate     = 115200;
+huart2.Init.WordLength   = UART_WORDLENGTH_8B;
+huart2.Init.StopBits     = UART_STOPBITS_1;
+huart2.Init.Parity       = UART_PARITY_NONE;
+huart2.Init.Mode         = UART_MODE_TX_RX;
+huart2.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+HAL_UART_Init(&huart2);  <span class="c">// MspInit: clock + PA2/PA3 AF7</span>
+
+<span class="c">/* ส่งแบบ blocking */</span>
+<span class="k">char</span> msg[32];
+<span class="k">int</span> n = sprintf(msg, "ADC=%u\r\n", raw);
+HAL_UART_Transmit(&huart2, (uint8_t*)msg, n, 100);
+
+<span class="c">/* รับแบบ interrupt ทีละ 1 ไบต์ */</span>
+uint8_t rx;  <span class="k">volatile</span> uint8_t g_rx, g_rxFlag;
+HAL_UART_Receive_IT(&huart2, &rx, 1);
+<span class="k">void</span> HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+  <span class="k">if</span> (huart->Instance == USART2){
+    g_rx = rx;  g_rxFlag = 1;
+    HAL_UART_Receive_IT(&huart2, &rx, 1);  <span class="c">// re-arm</span>
+  }
+}</pre>
+      <div class="block">
+        <div class="tbl"><table>
+          <thead><tr><th>ฟังก์ชัน</th><th>รอจนเสร็จ?</th><th>รู้ว่าเสร็จจาก</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">HAL_UART_Transmit / Receive</td><td>รอ (blocking) จนครบหรือ timeout</td><td>ค่าที่คืน HAL_OK / HAL_TIMEOUT / HAL_ERROR / HAL_BUSY</td></tr>
+            <tr><td class="mono">HAL_UART_Transmit_IT / Receive_IT</td><td>คืนทันที</td><td>TxCpltCallback / RxCpltCallback</td></tr>
+            <tr><td class="mono">HAL_UART_Transmit_DMA / Receive_DMA</td><td>คืนทันที</td><td>callback เดิม + HalfCplt</td></tr>
+            <tr><td class="mono">HAL_UART_ErrorCallback</td><td>–</td><td>ORE, FE, PE, NE</td></tr>
+          </tbody>
+        </table></div>
+        <ul>
+          <li>_IT และ _DMA: buffer ต้อง<b>มีอายุจนส่งเสร็จ</b> (static/global ไม่ใช่ local) และถ้ายังส่งไม่จบ การเรียกซ้ำจะได้ <b>HAL_BUSY</b></li>
+          <li>Receive_IT รับครบ Size แล้ว<b>หยุด</b> ต้องเรียกใหม่ใน callback</li>
+          <li>Timeout ต้องมากกว่าเวลาส่งจริง เช่น 100 ไบต์ที่ 9600 ใช้ ≈104 ms</li>
+          <li>WordLength <b>รวม parity</b>: 8B + parity = data 7 บิต ถ้าต้องการ 8E1 ใช้ UART_WORDLENGTH_9B</li>
+          <li>ส่ง string ใช้ <code>strlen()</code> ไม่ใช่ <code>sizeof()</code> เพราะ sizeof นับ '\0' ด้วย</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>2.10 Polling · Interrupt · DMA สำหรับ UART (CMSIS)</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>วิธี</th><th>กลไก</th><th>ข้อดี</th><th>ข้อเสีย / สิ่งที่ต้องระวัง</th></tr></thead>
+      <tbody>
+        <tr><td>Polling</td><td>วนรอ TXE / RXNE</td><td>เขียนง่าย</td><td>บล็อก CPU, รับพลาดได้ (ORE)</td></tr>
+        <tr><td>Interrupt</td><td>RXNEIE: ISR อ่าน DR ใส่ ring buffer · TXEIE: ISR เขียนไบต์ถัดไป</td><td>CPU ว่างระหว่างรอ</td><td>ต้อง<b>ปิด TXEIE เมื่อ buffer ว่าง</b> ไม่เช่นนั้น ISR วนไม่หยุด, ตัวแปรร่วมต้อง volatile</td></tr>
+        <tr><td>DMA</td><td>CR3 DMAT / DMAR + DMA1 Stream6 Ch4 (TX), Stream5 Ch4 (RX)</td><td>CPU ไม่ต้องแตะทีละไบต์</td><td>buffer ต้องไม่ถูกแก้ระหว่างส่ง ต้องรู้ว่าส่งจบเมื่อไร (TCIF)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ================= ADC ================= -->
+<section class="topic" id="adc" style="--c:var(--adc)">
+  <div class="topic-head">
+    <span class="label">CH3 · RM0383 ch.11</span>
+    <h2>ADC</h2>
+    <p>STM32F411 มี ADC1 ตัวเดียว เป็นแบบ SAR 12-bit มีช่องภายนอก 16 ช่อง (IN0–IN15) และช่องภายใน (temperature sensor, VREFINT, VBAT)</p>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>3.1 ขา → ช่อง</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>ขา</th><th>ช่อง</th><th>หมายเหตุบน Nucleo</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">PA0–PA1</td><td class="mono">IN0–IN1</td><td>ว่าง ใช้ได้</td></tr>
+          <tr><td class="mono">PA2–PA3</td><td class="mono">IN2–IN3</td><td>ถูกใช้โดย USART2 (ST-Link)</td></tr>
+          <tr><td class="mono">PA4</td><td class="mono">IN4</td><td>ใช้ได้</td></tr>
+          <tr><td class="mono">PA5</td><td class="mono">IN5</td><td>ต่อ LED</td></tr>
+          <tr><td class="mono">PA6–PA7</td><td class="mono">IN6–IN7</td><td></td></tr>
+          <tr><td class="mono">PB0–PB1</td><td class="mono">IN8–IN9</td><td></td></tr>
+          <tr><td class="mono">PC0–PC5</td><td class="mono">IN10–IN15</td><td></td></tr>
+        </tbody>
+      </table></div>
+      <p>ขาที่ใช้วัดต้องตั้ง <b>MODER = 11 (analog)</b> ADC ไม่ได้เลือกผ่าน AFR</p>
+    </div>
+    <div class="block">
+      <h3>3.2 แปลงค่าเป็นแรงดัน</h3>
+      <div class="formula">V = raw × V_REF / (2ⁿ − 1)  → 12-bit: raw × 3.3 / 4095</div>
+      <p>บางตำราใช้ตัวหาร 2ⁿ (4096) ผลต่างน้อยกว่า 1 LSB ในข้อสอบให้เลือกตัวเลือกที่ใกล้ที่สุด</p>
+      <div class="tbl"><table>
+        <thead><tr><th>RES</th><th>บิต</th><th>ช่วงค่า</th><th>1 LSB @3.3 V</th><th>cycles แปลง</th></tr></thead>
+        <tbody class="num">
+          <tr><td class="mono">00</td><td>12</td><td>0–4095</td><td>0.806 mV</td><td>12</td></tr>
+          <tr><td class="mono">01</td><td>10</td><td>0–1023</td><td>3.22 mV</td><td>10</td></tr>
+          <tr><td class="mono">10</td><td>8</td><td>0–255</td><td>12.9 mV</td><td>8</td></tr>
+          <tr><td class="mono">11</td><td>6</td><td>0–63</td><td>51.6 mV</td><td>6</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>3.3 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <p>HAL_ADC_Start = ตั้ง SWSTART · HAL_ADC_PollForConversion = วนรอ EOC · HAL_ADC_GetValue = อ่าน DR ส่วนค่าใน hadc1.Init แต่ละบรรทัดแปลเป็นบิตใน CR1/CR2 ตามตาราง</p>
+    <div class="two">
+      <pre>hadc1.Instance                   = ADC1;
+hadc1.Init.ClockPrescaler        = ADC_CLOCK_SYNC_PCLK_DIV4;
+hadc1.Init.Resolution            = ADC_RESOLUTION_12B;
+hadc1.Init.ScanConvMode          = DISABLE;
+hadc1.Init.ContinuousConvMode    = DISABLE;
+hadc1.Init.ExternalTrigConv      = ADC_SOFTWARE_START;
+hadc1.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE;
+hadc1.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+hadc1.Init.NbrOfConversion       = 1;
+hadc1.Init.DMAContinuousRequests = DISABLE;
+hadc1.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
+HAL_ADC_Init(&hadc1);
+
+ADC_ChannelConfTypeDef s = {0};
+s.Channel      = ADC_CHANNEL_0;          <span class="c">// PA0 = ADC1_IN0</span>
+s.Rank         = 1;
+s.SamplingTime = ADC_SAMPLETIME_84CYCLES;
+HAL_ADC_ConfigChannel(&hadc1, &s);
+
+<span class="c">/* polling: Start → Poll → GetValue (ทุกครั้งใน single mode) */</span>
+HAL_ADC_Start(&hadc1);
+<span class="k">if</span> (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+    raw = HAL_ADC_GetValue(&hadc1);     <span class="c">// อ่าน DR = ล้าง EOC</span>
+mv = raw * 3300 / 4095;                <span class="c">// mV แบบไม่ใช้ float</span></pre>
+      <div class="block">
+        <div class="tbl"><table>
+          <thead><tr><th>Init / ฟังก์ชัน</th><th>ความหมาย (register)</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">ClockPrescaler</td><td>ADCCLK = PCLK2 / 2,4,6,8 (ADC_CCR.ADCPRE)</td></tr>
+            <tr><td class="mono">Resolution</td><td>12/10/8/6 บิต (CR1.RES)</td></tr>
+            <tr><td class="mono">ScanConvMode + NbrOfConversion</td><td>แปลงหลายช่องตามลำดับ Rank (CR1.SCAN, SQR1.L)</td></tr>
+            <tr><td class="mono">ContinuousConvMode</td><td>แปลงซ้ำเองไม่หยุด (CR2.CONT)</td></tr>
+            <tr><td class="mono">ExternalTrigConv / Edge</td><td>SOFTWARE_START หรือ T2_TRGO ฯลฯ (CR2.EXTSEL/EXTEN)</td></tr>
+            <tr><td class="mono">DataAlign</td><td>RIGHT = 0–4095, LEFT = เลื่อนซ้าย 4 บิต (0xFFF0)</td></tr>
+            <tr><td class="mono">EOCSelection</td><td>EOC ทุกการแปลง หรือจบลำดับ (CR2.EOCS)</td></tr>
+            <tr><td class="mono">SamplingTime</td><td>3 … 480 cycles (SMPR1/2)</td></tr>
+            <tr><td class="mono">HAL_ADC_Start_IT</td><td>เปิด EOCIE → HAL_ADC_ConvCpltCallback</td></tr>
+            <tr><td class="mono">HAL_ADC_Start_DMA(&amp;h, buf, N)</td><td>DMA เติม buf → ConvHalfCpltCallback, ConvCpltCallback</td></tr>
+            <tr><td class="mono">HAL_ADC_ErrorCallback</td><td>overrun (OVR)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note trap"><span class="label">กับดัก</span>Single mode (ContinuousConvMode = DISABLE) แปลง 1 ครั้งต่อการเรียก <code>HAL_ADC_Start</code> ถ้าเรียก Start ครั้งเดียวนอกลูป ค่าที่อ่านในลูปจะค้าง</div>
+      </div>
+    </div>
+    <pre><span class="c">/* อัตรา sampling คงที่ด้วยฮาร์ดแวร์: TIM2 TRGO → ADC → DMA */</span>
+sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;         <span class="c">// TIM2: update → TRGO</span>
+hadc1.Init.ExternalTrigConv     = ADC_EXTERNALTRIGCONV_T2_TRGO;
+hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+hadc1.Init.DMAContinuousRequests = ENABLE;                     <span class="c">// DMA circular</span>
+HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuf, 256);
+HAL_TIM_Base_Start(&htim2);                                   <span class="c">// ไม่ต้องใช้ _IT</span>
+<span class="k">void</span> HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *h){ g_half = 1; }  <span class="c">// ครึ่งแรกพร้อม</span>
+<span class="k">void</span> HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *h)    { g_full = 1; }  <span class="c">// ครึ่งหลังพร้อม</span></pre>
+  </div>
+
+  <div class="block">
+    <h3>3.4 Clock, sampling time และเวลาแปลง</h3>
+    <div class="formula">T_conv = (Sampling cycles + Resolution cycles) / ADCCLK ,  ADCCLK = PCLK2 / {2,4,6,8}  (ADC->CCR ADCPRE)</div>
+    <ul>
+      <li>ใช้ HSI 16 MHz และ ADCPRE = /2 จะได้ ADCCLK = 8 MHz (ADCCLK สูงสุด 36 MHz)</li>
+      <li>Sampling time ต่อช่อง (SMPR2 สำหรับช่อง 0–9, SMPR1 สำหรับช่อง 10–18) เลือกได้ 3 / 15 / 28 / 56 / 84 / 112 / 144 / 480 cycles</li>
+      <li>ตัวอย่าง: 84 + 12 = 96 cycles ÷ 8 MHz = <b>12 µs</b> หรือ 3 + 12 = 15 cycles = 1.875 µs</li>
+      <li>ช่วง sampling คือช่วงที่ตัวเก็บประจุ sample-and-hold ชาร์จจากแหล่งสัญญาณ ถ้าแหล่งมี impedance สูงต้องเพิ่ม sampling time ไม่เช่นนั้นค่าจะต่ำกว่าจริงและแกว่ง</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>3.5 โหมดการแปลงและ register หลัก</h3>
+    <div class="reg" data-reg="cr2" style="--c:var(--adc)"></div>
+    <div class="two">
+      <div class="tbl"><table>
+        <thead><tr><th>Register / บิต</th><th>หน้าที่</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">CR2.ADON</td><td>เปิด ADC</td></tr>
+          <tr><td class="mono">CR2.SWSTART</td><td>เริ่มแปลงด้วยซอฟต์แวร์</td></tr>
+          <tr><td class="mono">CR2.CONT</td><td>0 = single, 1 = continuous (แปลงซ้ำทันที)</td></tr>
+          <tr><td class="mono">CR2.EXTEN / EXTSEL</td><td>external trigger: ขอบ (00 ปิด, 01 rising) / แหล่ง เช่น 0110 = TIM2_TRGO, 1000 = TIM3_TRGO</td></tr>
+          <tr><td class="mono">CR2.DMA / DDS</td><td>ให้ DMA ย้ายผล / ขอ DMA ต่อเนื่อง (ใช้กับ circular)</td></tr>
+          <tr><td class="mono">CR2.EOCS</td><td>0 = EOC เมื่อจบลำดับ, 1 = EOC ทุกการแปลง (และเปิดการตรวจ overrun)</td></tr>
+          <tr><td class="mono">CR1.SCAN / RES / EOCIE / OVRIE</td><td>แปลงหลายช่อง / ความละเอียด / interrupt</td></tr>
+          <tr><td class="mono">SQR1.L / SQR3.SQ1</td><td>จำนวนช่องในลำดับ − 1 / ช่องที่แปลงลำดับแรก</td></tr>
+          <tr><td class="mono">SR.EOC / SR.OVR</td><td>แปลงเสร็จ (อ่าน DR = ล้าง) / overrun</td></tr>
+        </tbody>
+      </table></div>
+      <pre><span class="c">/* ADC1 IN0 (PA0), software trigger, polling */</span>
+RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+GPIOA->MODER |= GPIO_MODER_MODER0;     <span class="c">// 11 analog</span>
+ADC->CCR    &= ~ADC_CCR_ADCPRE;        <span class="c">// PCLK2/2</span>
+ADC1->CR1   &= ~ADC_CR1_RES;           <span class="c">// 12-bit</span>
+ADC1->SMPR2 |= (0b100 << ADC_SMPR2_SMP0_Pos); <span class="c">// 84 cyc</span>
+ADC1->SQR1  &= ~ADC_SQR1_L;            <span class="c">// 1 conversion</span>
+ADC1->SQR3   = 0;                      <span class="c">// SQ1 = IN0</span>
+ADC1->CR2   |= ADC_CR2_ADON;
+
+ADC1->CR2 |= ADC_CR2_SWSTART;
+<span class="k">while</span> (!(ADC1->SR & ADC_SR_EOC));
+uint16_t raw = ADC1->DR;              <span class="c">// ล้าง EOC</span></pre>
+    </div>
+    <div class="note trap"><span class="label">กับดัก</span>SCAN หลายช่องโดยไม่ใช้ DMA จะได้แค่ค่าช่องสุดท้าย เพราะ ADC มี DR ตัวเดียวที่ถูกเขียนทับทุกการแปลง</div>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>3.6 Trigger: software vs hardware</h3>
+      <ul>
+        <li><b>SWSTART ใน main loop</b>: จังหวะขึ้นกับโค้ด jitter สูง</li>
+        <li><b>SWSTART ใน timer ISR</b>: ดีขึ้น แต่ยังแกว่งตาม interrupt latency, ISR อื่นที่ priority สูงกว่า และช่วงที่ปิด interrupt</li>
+        <li><b>Timer TRGO → ADC</b>: TIMx_CR2 MMS = 010 (update → TRGO) และ ADC EXTSEL = TIMx_TRGO, EXTEN = 01 เริ่มแปลงตรงจังหวะฮาร์ดแวร์ jitter ต่ำสุด</li>
+        <li><b>Continuous</b>: เร็วสุด แต่อัตราขึ้นกับ ADCCLK และ sampling time ไม่ได้ล็อกกับเวลาที่ต้องการ</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>3.7 การเก็บผล: polling · interrupt · DMA</h3>
+      <ul>
+        <li><b>Interrupt</b>: เปิด EOCIE ใน CR1 แล้วใน <code>ADC_IRQHandler</code> อ่าน DR (การอ่านล้าง EOC)</li>
+        <li><b>DMA</b>: ADC1 ใช้ DMA2 Stream0 (หรือ Stream4) Channel 0 ตั้ง CR2.DMA = 1 และ DDS = 1 ร่วมกับ DMA circular mode</li>
+        <li><b>Half-Transfer / Transfer-Complete</b>: ใช้ buffer แบบ ping-pong ประมวลผลครึ่งที่เต็มขณะ DMA เติมอีกครึ่ง ต้องทำให้เสร็จก่อน DMA วนกลับมา เช่น 128 ค่าที่ 8 kHz มีเวลา 16 ms</li>
+        <li><b>Overrun (OVR)</b>: ค่าใหม่มาก่อนอ่านค่าเก่า (เมื่อ DMA = 1 หรือ EOCS = 1) ข้อมูลหายและ DMA หยุด ต้องล้าง OVR แล้วเริ่มใหม่</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>3.8 Sampling theorem</h3>
+    <div class="formula">f_s > 2 f_max  ·  ถ้าเกิน Nyquist (f_s/2) ความถี่ที่เห็น = |f − k·f_s| ที่ใกล้ 0 ที่สุด</div>
+    <p>เช่น sine 3 kHz สุ่มที่ 5 kHz จะเห็นเป็น 2 kHz เครื่องวัดเสียงที่แยกแถบความถี่ถึง 4 kHz ต้อง sample มากกว่า 8 kHz และควรมี anti-aliasing filter ก่อนเข้า ADC</p>
+  </div>
+</section>
+
+<!-- ================= INTERRUPT ================= -->
+<section class="topic" id="int" style="--c:var(--int)">
+  <div class="topic-head">
+    <span class="label">CH4 · Cortex-M4 NVIC + EXTI</span>
+    <h2>Interrupt</h2>
+    <p>Interrupt คือสัญญาณที่หยุด flow ปกติชั่วคราวเพื่อให้ CPU ตอบ event สำคัญทันที เหมือนคนส่งอาหารโทรมาเรียก แทนที่เราจะเดินไปดูเป็นระยะ (polling)</p>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>4.1 เกิดอะไรขึ้นเมื่อ interrupt มา</h3>
+      <ol>
+        <li>Peripheral ตั้ง flag (เช่น EXTI PR, USART RXNE) และถ้าเปิด interrupt enable ของ peripheral ไว้ ก็จะส่ง request ไป NVIC</li>
+        <li>NVIC ตรวจว่าเปิด IRQ นั้นไว้หรือไม่ และ priority สูงกว่างานปัจจุบันหรือไม่</li>
+        <li>CPU push R0–R3, R12, LR, PC, xPSR ลง stack อัตโนมัติ แล้วอ่าน address ของ ISR จาก vector table (latency ≈12 cycles)</li>
+        <li>ISR ทำงาน และ<b>ต้องล้าง flag ของ peripheral</b></li>
+        <li>Return: ถ้ามี IRQ อื่นค้างจะ tail-chain ต่อทันที ถ้าไม่มีก็คืนค่าจาก stack แล้วกลับไปทำงานเดิม</li>
+      </ol>
+      <div class="note"><span class="label">3 ด่านที่ต้องผ่าน</span>(1) enable ที่ peripheral เช่น EXTI_IMR, RXNEIE, EOCIE, UIE (2) <code>NVIC_EnableIRQ(x_IRQn)</code> (3) interrupt รวมไม่ถูกปิด (PRIMASK, <code>__enable_irq()</code>) ขาดด่านใดด่านหนึ่ง ISR ไม่ทำงาน</div>
+    </div>
+    <div class="block">
+      <h3>4.2 Priority และ preemption</h3>
+      <ul>
+        <li>F411 ใช้ priority 4 บิต (0–15) <b>เลขน้อย = สำคัญกว่า</b> ตั้งด้วย <code>NVIC_SetPriority(IRQn, p)</code></li>
+        <li>ISR ที่ priority สูงกว่า<b>ขัด</b> (preempt) ISR ที่ต่ำกว่าได้ (nesting)</li>
+        <li>ISR ที่ priority เท่ากันหรือต่ำกว่าต้อง<b>รอ</b> (pending) จนกว่าตัวที่กำลังทำงานจะจบ</li>
+        <li>ถ้าค้างพร้อมกันหลายตัว ตัวที่ priority สูงสุดได้ก่อน ถ้าเท่ากัน IRQ number น้อยกว่าได้ก่อน</li>
+        <li>ISR ยาวจะเพิ่ม latency ของทุกตัวที่ priority ต่ำกว่าหรือเท่ากัน</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>4.3 EXTI สำหรับปุ่ม</h3>
+    <div class="two">
+      <div class="block">
+        <ul>
+          <li>EXTI line 0–15 รับจากขาเลขเดียวกันของพอร์ตใดพอร์ตหนึ่ง เลือกพอร์ตใน <b>SYSCFG_EXTICR</b> (ต้องเปิด SYSCFGEN ใน APB2ENR) <b>หนึ่ง line เลือกได้แค่หนึ่งพอร์ต</b> PB13 กับ PC13 จึงใช้ EXTI พร้อมกันไม่ได้</li>
+          <li><code>EXTICR[n/4]</code> ฟิลด์ที่ <code>(n mod 4)</code> กว้าง 4 บิต รหัสพอร์ต A = 0000, B = 0001, C = 0010, D = 0011, E = 0100, H = 0111</li>
+          <li>EXTI registers: IMR (unmask), RTSR (rising), FTSR (falling), SWIER (software trigger), PR (pending, <b>ล้างโดยเขียน 1</b>)</li>
+          <li>Vector: EXTI0, EXTI1, EXTI2, EXTI3, EXTI4 แยกกัน · <b>EXTI9_5</b> ใช้ร่วม line 5–9 · <b>EXTI15_10</b> ใช้ร่วม line 10–15 (ใน ISR ร่วมต้องเช็ค PR ว่าเป็น line ไหน)</li>
+          <li>ปุ่ม pull-up (active-low) กดแล้วเปลี่ยนจาก 1 เป็น 0 จึงใช้ falling edge</li>
+        </ul>
+        <div class="reg" data-reg="exticr4" style="--c:var(--int)"></div>
+      </div>
+      <pre><span class="c">/* CMSIS: PC13 → EXTI13, falling edge
+   (HAL_GPIO_Init กับ GPIO_MODE_IT_FALLING ทำทั้งหมดนี้ให้) */</span>
+RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
+RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+GPIOC->MODER &= ~GPIO_MODER_MODER13;          <span class="c">// input (บิต 27:26)</span>
+
+SYSCFG->EXTICR[3] &= ~SYSCFG_EXTICR4_EXTI13;
+SYSCFG->EXTICR[3] |=  SYSCFG_EXTICR4_EXTI13_PC; <span class="c">// บิต 7:4 = 0010</span>
+EXTI->IMR  |= EXTI_IMR_MR13;
+EXTI->FTSR |= EXTI_FTSR_TR13;
+NVIC_SetPriority(EXTI15_10_IRQn, 1);
+NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+<span class="k">volatile</span> uint8_t g_btn = 0;
+<span class="k">void</span> EXTI15_10_IRQHandler(<span class="k">void</span>){
+  <span class="k">if</span> (EXTI->PR & EXTI_PR_PR13) {           <span class="c">// vector ใช้ร่วม 10–15</span>
+    EXTI->PR = EXTI_PR_PR13;                 <span class="c">// เขียน 1 = ล้าง</span>
+    g_btn = 1;                               <span class="c">// แค่ตั้ง flag</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="block">
+      <h3>4.4 กฎการเขียน ISR</h3>
+      <ul>
+        <li><b>สั้น</b>: ล้าง flag, เก็บค่า, ตั้ง flag แล้วออก งานหนัก (sprintf, ส่ง UART, คำนวณ) ไปทำใน main หรือ DMA</li>
+        <li><b>ห้าม block</b>: ไม่ใช้ for-loop delay และไม่วนรอ TXE ใน ISR</li>
+        <li><b>volatile</b> ทุกตัวแปรที่ ISR กับ main ใช้ร่วมกัน ไม่เช่นนั้น optimizer อาจอ่านค่าแค่ครั้งเดียว</li>
+        <li><b>ล้าง flag ให้ถูกวิธี</b>: EXTI PR เขียน 1, USART RXNE อ่าน DR, ADC EOC อ่าน DR, TIM UIF เขียน 0 ถ้าไม่ล้าง ISR จะวนซ้ำ</li>
+        <li><b>Critical section</b>: การ read-modify-write ตัวแปรร่วมใน main ให้ครอบด้วย <code>__disable_irq()</code> / <code>__enable_irq()</code> สั้นๆ</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>4.5 Debounce และ handler ของ peripheral อื่น</h3>
+      <p>ปุ่มกลไกเด้ง 5–20 ms ทำให้เกิดหลาย edge วิธีที่ดีคือเก็บ timestamp จาก timer ใน ISR แล้วทิ้ง edge ที่ห่างจากครั้งก่อนน้อยกว่า ~30 ms หรือปิด IMR ชั่วคราวแล้วให้ timer เปิดคืน ห้ามใช้ delay ใน ISR</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Handler</th><th>แหล่ง (ใช้ร่วม)</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">USART2_IRQHandler</td><td>RXNE, TXE, TC, IDLE, ORE</td></tr>
+          <tr><td class="mono">ADC_IRQHandler</td><td>EOC, JEOC, AWD, OVR</td></tr>
+          <tr><td class="mono">TIM2_IRQHandler</td><td>UIF, CCxIF (ล้าง UIF ด้วยการเขียน 0)</td></tr>
+          <tr><td class="mono">DMA2_Stream0_IRQHandler</td><td>HTIF0, TCIF0 (ล้างผ่าน LIFCR)</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>4.6 อ่านโค้ด HAL ให้ออก (เทียบกับ CMSIS)</h3>
+    <p>HAL ซ่อน ISR ไว้ใน <code>stm32f4xx_it.c</code> และเรียก <b>callback</b> ที่เราเขียน callback ทุกตัวจึง<b>ทำงานในบริบท interrupt</b> ต้องสั้น ไม่ block</p>
+    <div class="tbl"><table>
+      <thead><tr><th>เหตุการณ์</th><th>ISR (vector)</th><th>HAL handler</th><th>Callback ที่เราเขียน</th></tr></thead>
+      <tbody>
+        <tr><td>กดปุ่ม PC13</td><td class="mono">EXTI15_10_IRQHandler</td><td class="mono">HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13) — ล้าง pending ให้แล้ว</td><td class="mono">HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)</td></tr>
+        <tr><td>UART รับ/ส่งครบ, error</td><td class="mono">USART2_IRQHandler</td><td class="mono">HAL_UART_IRQHandler(&amp;huart2)</td><td class="mono">HAL_UART_RxCpltCallback / TxCpltCallback / ErrorCallback</td></tr>
+        <tr><td>ADC แปลงเสร็จ</td><td class="mono">ADC_IRQHandler</td><td class="mono">HAL_ADC_IRQHandler(&amp;hadc1)</td><td class="mono">HAL_ADC_ConvCpltCallback</td></tr>
+        <tr><td>DMA ของ ADC ครึ่ง/เต็ม</td><td class="mono">DMA2_Stream0_IRQHandler</td><td class="mono">HAL_DMA_IRQHandler</td><td class="mono">HAL_ADC_ConvHalfCpltCallback / ConvCpltCallback</td></tr>
+        <tr><td>Timer ครบรอบ</td><td class="mono">TIM2_IRQHandler</td><td class="mono">HAL_TIM_IRQHandler(&amp;htim2)</td><td class="mono">HAL_TIM_PeriodElapsedCallback</td></tr>
+        <tr><td>ทุก 1 ms</td><td class="mono">SysTick_Handler</td><td class="mono">HAL_IncTick() → uwTick++</td><td>ใช้โดย HAL_Delay, HAL_GetTick, timeout</td></tr>
+      </tbody>
+    </table></div>
+    <div class="two">
+      <pre><span class="k">volatile</span> uint8_t g_btn = 0;
+<span class="k">static</span>   uint32_t lastTick = 0;
+
+<span class="k">void</span> HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+  <span class="k">if</span> (GPIO_Pin == GPIO_PIN_13){          <span class="c">// callback ใช้ร่วมทุก line</span>
+    uint32_t now = HAL_GetTick();
+    <span class="k">if</span> (now - lastTick > 50){            <span class="c">// debounce 50 ms</span>
+      g_btn = 1;  lastTick = now;
+    }
+  }
+}
+
+<span class="c">/* CubeMX: NVIC → ติ๊ก EXTI line[15:10] interrupts */</span>
+HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);  <span class="c">// (IRQn, preempt, sub)</span>
+HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);</pre>
+      <ul>
+        <li>Callback ของ HAL ประกาศเป็น <code>__weak</code> เราเขียนฟังก์ชันชื่อและ signature <b>ตรงทุกตัวอักษร</b>เพื่อ override ถ้าสะกดผิด คอมไพล์ผ่านแต่ไม่ถูกเรียก</li>
+        <li>Priority group 4 (ค่าเริ่มต้นของ HAL): preempt 0–15, sub ไม่มีผล <b>เลขน้อยสำคัญกว่า</b></li>
+        <li><b>SysTick priority = 15</b> (TICK_INT_PRIORITY) ถ้าเรียก HAL_Delay ใน callback ของ IRQ ที่ priority สูงกว่า (เช่น EXTI = 0) SysTick ขัดไม่ได้ tick ไม่เดิน <b>ค้างตลอดไป</b></li>
+        <li>Timer callback: <code>HAL_TIM_Base_Start_IT(&amp;htim2)</code> และใน callback เช็ค <code>htim-&gt;Instance == TIM2</code> เปลี่ยนคาบด้วย <code>__HAL_TIM_SET_AUTORELOAD(&amp;htim2, arr)</code></li>
+        <li>Critical section ใน HAL ใช้ <code>__disable_irq()</code> / <code>__enable_irq()</code> ได้เหมือนเดิม</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SYSTEM ================= -->
+<section class="topic" id="sys" style="--c:var(--int)">
+  <div class="topic-head">
+    <span class="label">4.7 · รวมทุกบท</span>
+    <h2>ออกแบบระบบรวม</h2>
+    <p>ข้อสอบแบบ “สถาปัตยกรรมใดเหมาะที่สุด” ตอบได้ด้วยการวาง 3 ชั้นนี้ ฮาร์ดแวร์คุมเวลา callback สั้น และ main ทำงานหนัก</p>
+  </div>
+  <div class="flow">
+    <div class="lane"><h4>ฮาร์ดแวร์ (ไม่ใช้ CPU)</h4>
+      <div class="step"><b>TIM2</b> update ทุก T → TRGO (HAL_TIM_Base_Start)</div>
+      <div class="step"><b>ADC1 IN0 (PA0)</b> เริ่มแปลงจาก TRGO</div>
+      <div class="step"><b>DMA</b> ย้ายผลลง buffer (HAL_ADC_Start_DMA)</div>
+      <div class="step"><b>USART2 TX</b> ส่งจาก buffer (HAL_UART_Transmit_DMA / _IT)</div></div>
+    <div class="lane"><h4>Callback (สั้น, จัด priority)</h4>
+      <div class="step"><b>HAL_GPIO_EXTI_Callback</b> (PC13, prio สูง): debounce, สลับ ARR หรือโหมด</div>
+      <div class="step"><b>ConvHalfCplt / ConvCplt</b>: ตั้ง flag ว่าครึ่งไหนพร้อม</div>
+      <div class="step"><b>RxCpltCallback</b>: เก็บไบต์ แล้ว re-arm Receive_IT</div></div>
+    <div class="lane"><h4>main loop (งานหนัก)</h4>
+      <div class="step">เช็ค flag → คำนวณ / เฉลี่ย / ตั้ง LED PA5</div>
+      <div class="step">sprintf ลง buffer static → Transmit_IT / _DMA</div>
+      <div class="step">ไม่มีงาน → <b>__WFI()</b> sleep</div></div>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr><th>สถาปัตยกรรม</th><th>Timing / jitter</th><th>Latency ปุ่ม</th><th>CPU load</th><th>ใช้เมื่อ</th></tr></thead>
+    <tbody>
+      <tr><td>Super loop + polling + delay</td><td>แย่ เพี้ยนตามงานในลูป</td><td>สูงสุดเท่ากับ 1 รอบลูป</td><td>100% (busy-wait)</td><td>lab ง่ายๆ</td></tr>
+      <tr><td>Timer ISR + flag + main</td><td>ดี มี jitter จาก latency</td><td>ต่ำ ถ้า EXTI priority สูง</td><td>ต่ำ</td><td>งานทั่วไป ระดับ ms</td></tr>
+      <tr><td>Timer TRGO + ADC + DMA</td><td>ดีที่สุด ล็อกกับฮาร์ดแวร์</td><td>ต่ำ</td><td>ต่ำสุด</td><td>sampling คงที่ระดับ kHz ขึ้นไป</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="two">
+    <div class="block">
+      <h3>คำนวณ timer</h3>
+      <div class="formula">f_update = f_TIM / ((PSC + 1)(ARR + 1))</div>
+      <ul class="num">
+        <li>16 MHz, PSC = 15999 → tick 1 ms · ARR = 199 → 200 ms · ARR = 999 → 1 s</li>
+        <li>16 MHz, PSC = 15 → tick 1 µs · ARR = 999 → 1 kHz · ARR = 124 → 8 kHz</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3>เช็คงบเวลา</h3>
+      <ul>
+        <li>UART: บิตทั้งหมด ÷ baud ต้องน้อยกว่าคาบที่ต้องส่ง</li>
+        <li>DMA ping-pong: เวลาประมวลผลครึ่ง buffer ต้องน้อยกว่า (N/2) ÷ f_s</li>
+        <li>ISR: เวลาที่ใช้ทั้งหมดต่อวินาทีต้องเหลือให้ main ทำงาน</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHEAT ================= -->
+<section class="topic" id="cheat" style="--c:var(--ink)">
+  <div class="topic-head">
+    <span class="label">ห้ามใช้เครื่องคิดเลข · ทบทวน 5 นาทีสุดท้าย</span>
+    <h2>คิดเลขโดยไม่ใช้เครื่องคิดเลข</h2>
+    <p>ท่องค่าอ้างอิงเหล่านี้ไว้ แล้วใช้สัดส่วนแทนการหารยาว เช่น raw 1024 = 1/4 สเกล จึงได้ ≈ 3.3 / 4 V</p>
+  </div>
+  <div class="cheat">
+    <div class="card c-adc"><span class="label">ADC 12-bit · 3.3 V</span><div class="k">4096 ≈ 3.3 V · 1 LSB ≈ 0.8 mV</div><p>512 ≈ 0.41 V · 1024 ≈ 0.83 V · 2048 ≈ 1.65 V · 3072 ≈ 2.48 V · 4095 = 3.3 V · 1241 ≈ 1.00 V</p></div>
+    <div class="card c-adc"><span class="label">แรงดัน → raw</span><div class="k">raw ≈ V × 1241</div><p>0.5 V ≈ 620 · 1 V ≈ 1241 · 1.65 V ≈ 2048 · 2 V ≈ 2482 · 3 V ≈ 3723</p></div>
+    <div class="card c-adc"><span class="label">เวลาแปลง @ 8 MHz</span><div class="k">T = (SMP + bits) / ADCCLK</div><p>1 cycle = 0.125 µs · (3+12) = 1.875 µs · (84+12) = 12 µs · (480+12) = 61.5 µs</p></div>
+    <div class="card c-uart"><span class="label">Bit time</span><div class="k">1/9600 ≈ 104 µs · 1/115200 ≈ 8.7 µs</div><p>8N1 = 10 บิต/ไบต์ · 8O1/8E1 = 11 บิต · 9600 → 960 B/s · 115200 → 11,520 B/s</p></div>
+    <div class="card c-uart"><span class="label">เวลาส่งข้อความ</span><div class="k">t = ไบต์ × 10 / baud</div><p>@9600: 10 B ≈ 10 ms · 48 B = 50 ms · 100 B ≈ 104 ms · @115200: 100 B ≈ 8.7 ms</p></div>
+    <div class="card c-uart"><span class="label">BRR (register)</span><div class="k">BRR = round(16 M / baud)</div><p>9600 → 1667 (0x683) · 115200 → 139 (0x8B)</p></div>
+    <div class="card c-gpio"><span class="label">GPIO</span><div class="k">MODER/PUPDR/OSPEEDR: บิต 2y · AFR: 4(y mod 8)</div><p>PA5 → MODER บิต 11:10 · PC13 → บิต 27:26 · GPIOC base = 0x4002 0800</p></div>
+    <div class="card c-gpio"><span class="label">กระพริบ</span><div class="k">f = 1 / (2 × delay)</div><p>HAL_Delay(250) → 2 Hz · (500) → 1 Hz · (1000) → 0.5 Hz · for-loop 1 s ≈ 1,333,333 รอบ</p></div>
+    <div class="card c-int"><span class="label">Timer @16 MHz</span><div class="k">T = (PSC+1)(ARR+1) / f</div><p>PSC 15999 → 1 ms/tick · PSC 15 → 1 µs/tick · ARR 999 → 1 s หรือ 1 ms</p></div>
+    <div class="card c-int"><span class="label">EXTI PC13</span><div class="k">EXTI15_10_IRQn · falling edge</div><p>register: EXTICR[3] บิต 7:4 = 0010 · HAL: GPIO_MODE_IT_FALLING</p></div>
+  </div>
+</section>
+
+<!-- ================= EXAM ================= -->
+<section class="topic" id="exam" style="--c:var(--accent)">
+  <div class="topic-head">
+    <span class="label">ข้อสอบจำลอง · 70 ข้อ · 140 คะแนน</span>
+    <h2>ข้อสอบจำลองตามรูปแบบปลายภาค</h2>
+    <p>เลือกคำตอบ เขียนเหตุผลลงช่อง แล้วกดส่ง ระบบจะแสดงเหตุผลที่ควรเขียนและประเด็นที่ผู้ตรวจมองหา จากนั้นให้คะแนนตัวเองตามกติกาเดียวกับข้อสอบจริง คำตอบและเหตุผลถูกเก็บไว้ในเบราว์เซอร์นี้</p>
+  </div>
+
+  <div class="cover">
+    <div class="cover-head">
+      <p><b>ข้อสอบจำลอง</b> (สำหรับทบทวน ไม่ใช่ข้อสอบจริง)</p>
+      <p>รายวิชา EN813202 Microprocessors and Interfacing · ปลายภาค ภาคต้น ปีการศึกษา 2569</p>
+    </div>
+    <div class="cover-body">
+      <div class="block">
+        <span class="label">คำสั่ง</span>
+        <ol>
+          <li>ทั้งหมด 70 ข้อ รวม 140 คะแนน ข้อละ 2 คะแนน <u><b>ต้องตอบให้ถูกพร้อมคำอธิบายเหตุผลที่ถูกต้อง</b></u> หากไม่มีคำอธิบายหรืออธิบายผิดมากจะไม่ได้คะแนน</li>
+          <li>ไม่ใช้เอกสารและเครื่องคิดเลข ตัวเลขทุกข้อคิดในใจได้</li>
+          <li>ไม่ได้ให้เขียนโค้ด แต่มีโค้ดให้อ่านและอธิบายการทำงาน ส่วนใหญ่เป็น CMSIS แบบที่เรียน บางข้อเป็น HAL ซึ่งชื่อฟังก์ชันบอกการทำงานอยู่แล้ว</li>
+          <li>ฮาร์ดแวร์: LED = PA5 (active high), ปุ่ม = PC13 (active low), UART TX/RX = PA2/PA3 (USART2), Potentiometer = PA0 (ADC1_IN0), VREF+ = 3.3 V</li>
+        </ol>
+      </div>
+      <div class="tbl"><table class="scoretbl">
+        <thead><tr><th>ข้อ</th><th>โจทย์</th><th>ทำแล้ว</th><th>คะแนน</th></tr></thead>
+        <tbody id="scoreTable"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="qbar">
+    <div class="qrow" id="filters" role="group" aria-label="กรองข้อสอบ">
+      <button class="chip" data-f="all" aria-pressed="true">ทั้งหมด</button>
+      <button class="chip c-gpio" data-f="gpio" aria-pressed="false">1. GPIO</button>
+      <button class="chip c-uart" data-f="uart" aria-pressed="false">2. UART</button>
+      <button class="chip c-adc" data-f="adc" aria-pressed="false">3. ADC</button>
+      <button class="chip c-int" data-f="int" aria-pressed="false">4. Interrupt</button>
+      <button class="chip" data-f="todo" aria-pressed="false" style="--c:var(--muted)">ยังไม่ทำ</button>
+      <button class="chip" data-f="pending" aria-pressed="false" style="--c:var(--warn)">รอให้คะแนน</button>
+      <button class="chip" data-f="zero" aria-pressed="false" style="--c:var(--bad)">ไม่ได้คะแนน</button>
+    </div>
+    <div class="qrow">
+      <label for="mode">โหมด</label>
+      <select id="mode">
+        <option value="exam">สอบ (ซ่อนเฉลยจนกว่าจะส่ง)</option>
+        <option value="study">อ่านเฉลยทุกข้อ</option>
+      </select>
+      <button class="btn danger" id="reset">ล้างคำตอบทั้งหมด</button>
+    </div>
+    <div class="score" id="score" aria-live="polite"></div>
+  </div>
+  <div class="qlist" id="qlist"></div>
+</section>
+
+</main>
+</div>
+
+<footer class="foot">
+  <p>อ้างอิง: สไลด์ Introduction to Embedded Systems Chapter 1 (GPIO) และ Chapter 3 (UART) · STM32F411 Reference Manual RM0383 · STM32F4 HAL User Manual (UM1725) · ข้อสอบชุดนี้เป็นข้อสอบจำลองที่จัดทำขึ้นเพื่อทบทวน ไม่ใช่ข้อสอบจริงของรายวิชา</p>
+</footer>
+
+<a href="#exam" class="pill" id="pill" hidden></a>
+<script>
+/* ข้อสอบจำลอง 70 ข้อ: GPIO 15 · UART 20 · ADC 20 · Interrupt 15 — เน้นอ่านโค้ด (CMSIS เป็นหลัก, HAL บางข้อ) */
+const QUESTIONS = [
+{id:"g1",
+ t:"gpio",
+ q:`โค้ดนี้ตั้งค่า PA5 ให้ทำงานแบบใด และใช้ขับ LED แบบ active high ได้หรือไม่`,
+ code:`RCC->AHB1ENR  |= RCC_AHB1ENR_GPIOAEN;
+GPIOA->MODER  &= ~GPIO_MODER_MODER5;
+GPIOA->MODER  |= (0b01 << GPIO_MODER_MODER5_Pos);
+GPIOA->OTYPER &= ~GPIO_OTYPER_OT5;
+GPIOA->ODR    |= GPIO_ODR_OD5;`,
+ o:[`Output push-pull และสั่ง HIGH ใช้ขับ LED active high ได้ (LED ติด)`,`Output open-drain ใช้ขับ LED active high ไม่ได้`,`Alternate function ขาถูก peripheral ขับ`,`Input ที่เปิด pull-up`],
+ a:0,
+ x:`บรรทัดแรก<b>เปิด clock GPIOA</b> (clock gating) จากนั้นล้าง MODER5 แล้วใส่ 01 = <b>general purpose output</b> ล้าง OT5 = 0 คือ <b>push-pull</b> ซึ่งจ่ายกระแสออกได้เมื่อเป็น 1 และ ODR5 = 1 ทำให้ขาเป็น HIGH LED แบบ active high จึงติด`,
+ k:[`MODER5 = 01 → output, OT5 = 0 → push-pull`,`push-pull จ่ายกระแสได้ ODR5 = 1 → LED ติด`],
+ w:[null,`OT5 ถูกล้างเป็น 0 คือ push-pull ไม่ใช่ open-drain`,`AF ต้องเป็น MODER = 10`,`input ต้องเป็น MODER = 00 และโค้ดไม่ได้แตะ PUPDR`]},
+
+{id:"g2",
+ t:"gpio",
+ q:`ปุ่ม PC13 เป็น active low ข้อใดทำให้ LED PA5 ติดเฉพาะตอนกดปุ่ม`,
+ o:[`if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); else HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);`,`if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET); else HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);`,`if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == GPIO_PIN_RESET) HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);`,`HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5); ทุกรอบของ while(1)`],
+ a:1,
+ x:`Active low แปลว่า<b>กดแล้วอ่านได้ 0</b> (GPIO_PIN_RESET) เพราะปุ่มดึงขาลง GND ส่วนตอนปล่อย ตัวต้านทาน pull-up ทำให้อ่านได้ 1 จึงต้องเทียบกับ GPIO_PIN_RESET แล้วสั่ง LED (active high) เป็น GPIO_PIN_SET`,
+ k:[`active low: กด = GPIO_PIN_RESET (0)`,`LED active high: ติด = GPIO_PIN_SET`],
+ w:[`เทียบกับ SET จึงกลับด้าน LED ติดตอนไม่กด`,null,`สลับขากัน อ่าน LED แล้วไปเขียนขาปุ่ม`,`toggle ไม่ได้ดูปุ่มเลย LED จะกระพริบตลอด`]},
+
+{id:"g3",
+ t:"gpio",
+ q:`โปรแกรมเปิดแค่ <code>__HAL_RCC_GPIOA_CLK_ENABLE()</code> แล้ว init ทั้ง PA5 และ PC13 การอ่าน <code>HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)</code> จะเป็นอย่างไร`,
+ o:[`อ่านได้ปกติ เพราะ HAL_GPIO_Init เปิด clock ให้เอง`,`อ่านได้ปกติ เพราะ GPIOA กับ GPIOC ใช้ clock เดียวกัน`,`ใช้ไม่ได้ เพราะ GPIOC ไม่มี clock การตั้งค่าไม่ถูกเขียนลง register และค่าที่อ่านไม่ถูกต้อง`,`MCU reset ทันที`],
+ a:2,
+ x:`แต่ละพอร์ตมีบิตเปิด clock ของตัวเองใน RCC_AHB1ENR (GPIOAEN, GPIOCEN) ถ้าไม่เปิด GPIOC จะเกิด <b>clock gating</b>: register ของ GPIOC เข้าถึงไม่ได้หรือคืนค่าผิด HAL_GPIO_Init ไม่ได้เปิด clock ให้ ต้องเรียก <code>__HAL_RCC_GPIOC_CLK_ENABLE()</code> เอง (CubeMX สร้างให้ใน MX_GPIO_Init)`,
+ k:[`clock gating: GPIOC ไม่มี clock`,`ต้องเรียก __HAL_RCC_GPIOC_CLK_ENABLE()`],
+ w:[`HAL_GPIO_Init ไม่ได้เปิด clock`,`แต่ละพอร์ตมีบิต clock enable แยกกัน`,null,`ไม่ทำให้ reset แค่พอร์ตใช้งานไม่ได้`]},
+
+{id:"g4",
+ t:"gpio",
+ q:`สมมติ <code>GPIOA->MODER</code> มีค่า <code>0xFFFFFFFF</code> แล้วรันเพียง <code>GPIOA->MODER |= (0b01 &lt;&lt; 10);</code> PA5 จะอยู่ในโหมดใด`,
+ o:[`General purpose output (01)`,`Alternate function (10)`,`Analog (11)`,`Input (00)`],
+ a:2,
+ x:`MODER5 อยู่ที่บิต 11:10 (2 × 5 = 10) ค่าเดิมเป็น 11 คำสั่ง <code>|=</code> ทำได้แค่ set บิตเป็น 1 จึง<b>ล้างบิต 11 ไม่ได้</b> MODER5 ยังเป็น 11 = Analog ต้องเขียน <code>&amp;= ~(0b11 &lt;&lt; 10)</code> ก่อนแล้วค่อย <code>|= (0b01 &lt;&lt; 10)</code> (clear before set)`,
+ k:[`MODER5 = บิต 11:10`,`OR ล้างบิตเป็น 0 ไม่ได้ ยังเป็น 11 = analog`,`ต้อง clear ก่อน set`],
+ w:[`จะเป็น 01 ได้ต้องล้างบิต 11 ก่อน`,`10 ต้องการบิต 10 เป็น 0 แต่ยังเป็น 1`,null,`OR ทำให้บิตเป็น 0 ไม่ได้`]},
+
+{id:"g5",
+ t:"gpio",
+ q:`Register <code>GPIOC_IDR</code> อยู่ที่ address ใด (GPIOA base = <code>0x4002 0000</code> แต่ละพอร์ตห่างกัน <code>0x400</code>, IDR offset = <code>0x10</code>)`,
+ o:[`0x4002 0010`,`0x4002 0410`,`0x4002 0810`,`0x4002 0814`],
+ a:2,
+ keep:true,
+ x:`GPIOC เป็นพอร์ตที่ 3 (A = 0, B = 1, C = 2) base = 0x4002 0000 + 2 × 0x400 = <b>0x4002 0800</b> บวก offset ของ IDR 0x10 ได้ <b>0x4002 0810</b> (Register address = Peripheral base + Offset)`,
+ k:[`GPIOC base = 0x4002 0800`,`+ offset IDR 0x10`],
+ w:[`นี่คือ GPIOA_IDR`,`นี่คือ GPIOB_IDR`,null,`offset 0x14 คือ ODR ไม่ใช่ IDR`]},
+
+{id:"g6",
+ t:"gpio",
+ q:`ถ้าจะตั้ง PC13 เป็น input ต้องล้างบิตใดของ <code>GPIOC->MODER</code>`,
+ o:[`บิต 13`,`บิต 14:13`,`บิต 26:25`,`บิต 27:26`],
+ a:3,
+ keep:true,
+ x:`MODER ใช้ 2 บิตต่อขา ขา y อยู่ที่บิต [2y+1 : 2y] ขา 13 จึงอยู่ที่บิต <b>27:26</b> และ input = 00 จึงเขียน <code>GPIOC->MODER &amp;= ~(0b11 &lt;&lt; 26)</code>`,
+ k:[`MODER 2 บิตต่อขา`,`ขา 13 → บิต 2×13 = 26 ถึง 27`],
+ w:[`นั่นคือรูปแบบของ register 1 บิตต่อขา เช่น IDR, ODR`,`คิดเหมือน 1 บิตต่อขาแล้วต่อบิตถัดไป`,`ตำแหน่งเริ่มต้องเป็น 26 (เลขคู่) ไม่ใช่ 25`,null]},
+
+{id:"g7",
+ t:"gpio",
+ q:`โค้ดนี้ตั้งใจให้ LED ติดเมื่อกดปุ่ม PC13 (active low) ผลจริงคืออะไร`,
+ code:`if (GPIOC->IDR & GPIO_IDR_ID13 == 0) {
+    GPIOA->ODR |=  GPIO_ODR_OD5;
+} else {
+    GPIOA->ODR &= ~GPIO_ODR_OD5;
+}`,
+ o:[`ทำงานถูกต้อง`,`LED ติดตอนปล่อย ดับตอนกด`,`LED ไม่ติดเลย ไม่ว่าจะกดหรือไม่`,`LED ติดตลอดเวลา`],
+ a:2,
+ x:`ในภาษา C <code>==</code> มี precedence สูงกว่า <code>&amp;</code> นิพจน์จึงเป็น <code>IDR &amp; (GPIO_IDR_ID13 == 0)</code> เนื่องจาก GPIO_IDR_ID13 = 0x2000 ไม่เท่ากับ 0 วงเล็บได้ 0 ทั้งนิพจน์จึงเป็น IDR &amp; 0 = 0 เสมอ เงื่อนไขเป็นเท็จ เข้า else ตลอด <b>LED ไม่ติดเลย</b> ต้องเขียน <code>(GPIOC->IDR &amp; GPIO_IDR_ID13) == 0</code>`,
+ k:[`== มาก่อน & (operator precedence)`,`ได้ IDR & 0 = 0 เงื่อนไขเท็จเสมอ`],
+ w:[`ต้องใส่วงเล็บครอบ IDR & ID13 ก่อน`,`เงื่อนไขเท็จเสมอ ไม่ได้กลับด้าน`,null,`เข้า else (LED ดับ) ทุกครั้ง`]},
+
+{id:"g8",
+ t:"gpio",
+ q:`ถ้าตั้ง PA5 เป็น output แบบ <b>open-drain</b> (OTYPER บิต 5 = 1) ไม่เปิด pull และ LED ต่อจาก PA5 ผ่านตัวต้านทานลง GND (active high) ผลคืออะไร`,
+ o:[`ODR5 = 1 LED ติด, ODR5 = 0 LED ดับ เหมือน push-pull`,`ODR5 = 1 LED ดับ, ODR5 = 0 LED ติด`,`LED ไม่ติดทั้งสองสถานะ`,`LED ติดสลัวตลอดเวลา`],
+ a:2,
+ x:`Open-drain มีแค่ N-MOS: ODR = 0 ดึงขาลง 0 V ส่วน ODR = 1 ปล่อยขาเป็น <b>high impedance</b> ไม่มีทรานซิสเตอร์ดึงขาขึ้น VDD วงจร active high ต้องให้ขาจ่ายกระแส จึงไม่มีกระแสผ่าน LED ทั้งสองสถานะ ต้องใช้ push-pull หรือมี pull-up ภายนอก`,
+ k:[`open-drain: 1 = high-Z ไม่จ่ายกระแส`,`0 = 0 V เท่ากับ GND ไม่มีความต่างศักย์`],
+ w:[`นั่นคือพฤติกรรม push-pull`,`RESET ทำให้ขา 0 V เท่ากับ GND อีกฝั่ง ไม่มีกระแส`,null,`ไม่ได้เปิด pull จึงไม่มีแหล่งจ่ายกระแสเลย`]},
+
+{id:"g9",
+ t:"gpio",
+ q:`ข้อใด<b>ไม่ถูกต้อง</b>เกี่ยวกับขา PA0 ที่ตั้งเป็น analog mode (MODER0 = 11) เพื่อต่อ potentiometer`,
+ o:[`Schmitt trigger ถูกปิด ถ้าอ่าน IDR บิต 0 จะได้ 0 เสมอ`,`Output buffer ถูกปิด`,`ควรตั้ง PUPDR0 = 01 (pull-up) เพื่อให้ค่า ADC นิ่ง`,`ขาไม่ทน 5 V ในโหมดนี้`],
+ a:2,
+ x:`ตาราง GPIO Mode summary ระบุว่า Analog mode <b>ปิด pull-up/pull-down เสมอ</b> การตั้ง PUPDR ไม่มีผล (และถ้าต่อได้จริงจะทำให้แรงดันที่วัดเพี้ยน เพราะกลายเป็นวงจรแบ่งแรงดันกับ pot) ข้ออื่นถูกตามสไลด์: output buffer ปิด, Schmitt trigger ปิด, IDR อ่านได้ 0, ไม่ทน 5 V`,
+ k:[`analog mode ปิด pull-up/pull-down`,`ถ้ามี pull จะดึงแรงดันเพี้ยน`],
+ w:[`ถูกตามสไลด์`,`ถูก analog เป็นทางเข้าอย่างเดียว`,null,`ถูก สไลด์ระบุว่าโหมดนี้ไม่ 5 V tolerant`]},
+
+{id:"g10",
+ t:"gpio",
+ q:`โปรแกรมใช้ LED PA5, USART2 และ ADC1 ข้อใดระบุ bus/register ที่เปิด clock ถูกต้อง`,
+ o:[`ทุกตัวเปิดใน RCC->AHB1ENR`,`GPIOA ใน AHB1ENR, USART2 ใน APB1ENR, ADC1 ใน APB2ENR`,`GPIOA และ USART2 ใน APB1ENR, ADC1 ใน APB2ENR`,`GPIOA และ ADC1 ใน AHB1ENR, USART2 ใน APB2ENR`],
+ a:1,
+ x:`จากสไลด์ Clock gating: GPIOAEN อยู่ใน <b>RCC_AHB1ENR</b>, USART2EN อยู่ใน <b>RCC_APB1ENR</b>, ADC1EN อยู่ใน <b>RCC_APB2ENR</b> ตรงกับ memory map (GPIO อยู่บน AHB1, USART2 อยู่บน APB1, ADC1 อยู่บน APB2) ใน HAL คือ __HAL_RCC_GPIOA_CLK_ENABLE(), __HAL_RCC_USART2_CLK_ENABLE(), __HAL_RCC_ADC1_CLK_ENABLE()`,
+ k:[`GPIO → AHB1`,`USART2 → APB1`,`ADC1 → APB2`],
+ w:[`USART2 และ ADC1 ไม่ได้อยู่บน AHB1`,null,`GPIO อยู่บน AHB1`,`ADC1 อยู่ APB2 และ USART2 อยู่ APB1 ข้อนี้สลับกัน`]},
+
+{id:"g11",
+ t:"gpio",
+ q:`while(1) มีแค่ <code>HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5); HAL_Delay(250);</code> LED จะกระพริบที่ความถี่เท่าใด`,
+ o:[`0.5 Hz`,`1 Hz`,`2 Hz`,`4 Hz`],
+ a:2,
+ keep:true,
+ x:`Toggle ทุก 250 ms → LED ติด 250 ms แล้วดับ 250 ms <b>หนึ่งคาบ = 500 ms</b> ความถี่ = 1 / 0.5 s = <b>2 Hz</b> (การ toggle 2 ครั้งเท่ากับ 1 คาบ)`,
+ k:[`toggle 2 ครั้ง = 1 คาบ`,`คาบ 500 ms → 2 Hz`],
+ w:[`นั่นคือ delay 1000 ms`,`นั่นคือ delay 500 ms`,null,`นับ toggle 1 ครั้งเป็น 1 คาบ ซึ่งผิด`]},
+
+{id:"g12",
+ t:"gpio",
+ q:`while(1): อ่านปุ่ม PC13 → ตั้ง LED PA5 ตามปุ่ม → <code>HAL_Delay(1000)</code> ถ้ากดปุ่มค้างไว้ทันทีหลังจากโปรแกรมเพิ่งอ่านปุ่มไป LED จะติดช้าที่สุดประมาณเท่าใด และถ้ากดเพียง 0.3 s จะเกิดอะไรขึ้น`,
+ o:[`ติดทันที และกดสั้นก็เห็น`,`ช้าสุด ≈ 1 ms และกดสั้นก็เห็น`,`ช้าสุด ≈ 1 s และการกด 0.3 s อาจไม่ถูกตรวจเลย`,`ไม่มีวันติด เพราะ HAL_Delay ปิด GPIO`],
+ a:2,
+ x:`นี่คือ <b>polling ร่วมกับ blocking function</b> ระหว่าง HAL_Delay(1000) CPU วนรอ tick ไม่ได้อ่านปุ่ม ปุ่มจึงถูกอ่านครั้งละ 1 รอบ (ทุก ≈1 s) ถ้ากดหลังอ่านพอดีต้องรอ ≈1 s และถ้ากดสั้นกว่าระยะ delay แล้วปล่อยก่อน โปรแกรมจะพลาดไปเลย แก้ด้วย EXTI หรือเลิกใช้ delay ยาวในลูป`,
+ k:[`HAL_Delay เป็น blocking ไม่อ่านปุ่มระหว่างรอ`,`latency ≈ 1 s และพลาดการกดสั้นได้`],
+ w:[`ขาเปลี่ยนทันทีแต่ไม่มีใครอ่าน`,`1 ms คือ 1 tick ไม่ใช่ความยาว delay`,null,`HAL_Delay ไม่ได้ปิด GPIO แค่ทำให้ CPU รอ`]},
+
+{id:"g13",
+ t:"gpio",
+ q:`คำสั่งใดทำให้ PA5 เป็น LOW ในการเขียนครั้งเดียว ไม่ต้อง read-modify-write และไม่กระทบขาอื่น (เป็นวิธีเดียวกับที่ HAL_GPIO_WritePin ใช้)`,
+ o:[`GPIOA->ODR = 0;`,`GPIOA->BSRR = (1U << 5);`,`GPIOA->BSRR = (1U << 21);`,`GPIOA->ODR ^= (1U << 5);`],
+ a:2,
+ x:`BSRR บิต 0–15 คือ set (BSy) และบิต 16–31 คือ reset (BRy) เขียน 1 ที่บิต <b>16 + 5 = 21</b> จะ reset PA5 ทันที บิตที่เขียน 0 ไม่มีผล จึงไม่ต้องอ่านค่าเดิมก่อนและไม่ถูก interrupt แทรกกลางคัน HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET) ก็เขียน BSRR แบบนี้`,
+ k:[`BSRR บิต 16+y = reset`,`เขียนครั้งเดียว atomic ไม่ต้อง RMW`],
+ w:[`ทำให้ทุกขาในพอร์ต A เป็น LOW`,`บิต 5 คือ set ทำให้ PA5 เป็น HIGH`,null,`toggle ขึ้นกับค่าเดิมและเป็น RMW`]},
+
+{id:"g14",
+ t:"gpio",
+ q:`for-loop delay ใช้ 12 คำสั่งต่อรอบที่ 16 MHz ถ้าวน <code>toggle LED → delay</code> และต้องการให้ LED กระพริบ <b>2 Hz</b> ต้องตั้ง DELAY_THRESHOLD ประมาณเท่าใด`,
+ o:[`333,333`,`666,667`,`1,333,333`,`2,666,667`],
+ a:0,
+ keep:true,
+ x:`2 Hz → คาบ 0.5 s และต้อง toggle 2 ครั้งต่อคาบ จึง toggle ทุก <b>0.25 s</b> จำนวนรอบ = t × f / 12 = 0.25 × 16,000,000 / 12 = 4,000,000 / 12 ≈ <b>333,333</b>`,
+ k:[`toggle ทุก 0.25 s`,`N = 0.25 × 16 M / 12`],
+ w:[null,`toggle ทุก 0.5 s ได้ 1 Hz`,`delay 1 s ได้ 0.5 Hz (Lab 1.5)`,`delay 2 s`]},
+
+{id:"g15",
+ t:"gpio",
+ q:`จากสไลด์ macro <code>GPIO_MODER_MODER5</code> คือ mask ของฟิลด์ MODER5 ทั้งสองบิต ถ้าเขียน <code>GPIOA->MODER |= GPIO_MODER_MODER5;</code> หลังจากล้างฟิลด์แล้ว PA5 จะอยู่ในโหมดใด`,
+ o:[`General purpose output`,`Alternate function`,`Analog`,`Input`],
+ a:2,
+ x:`สไลด์ Device-specific Register Definition ระบุว่า macro ของฟิลด์หลายบิตแปลว่า<b>ตั้งทุกบิตเป็น 1</b> GPIO_MODER_MODER5 = 0b11 &lt;&lt; 10 จึงทำให้ MODER5 = <b>11 = Analog</b> ถ้าต้องการ output ต้องใช้ <code>(0b01 &lt;&lt; GPIO_MODER_MODER5_Pos)</code>`,
+ k:[`macro ของฟิลด์ = ทุกบิตเป็น 1 (0b11)`,`MODER = 11 คือ analog ต้องใช้ _Pos เพื่อใส่ 01`],
+ w:[`output คือ 01 ต้อง shift ด้วย _Pos`,`AF คือ 10`,null,`input คือ 00 แต่ OR ทำให้เป็น 11`]},
+
+{id:"u1",
+ t:"uart",
+ q:`ส่ง 'A' แบบ 8 data bits, odd parity, 1 stop bit ที่ 9600 bps ใช้เวลาต่อ frame ประมาณเท่าใด`,
+ o:[`0.83 ms`,`0.94 ms`,`1.04 ms`,`1.15 ms`],
+ a:3,
+ keep:true,
+ x:`1 frame = start 1 + data 8 + parity 1 + stop 1 = <b>11 บิต</b> 1 บิต = 1/9600 ≈ 104 µs จึงได้ 11 × 104 µs ≈ <b>1.15 ms</b> (สไลด์คิดได้ 1.145 ms)`,
+ k:[`นับ start + 8 data + parity + stop = 11 บิต`,`× 1/9600`],
+ w:[`8 บิต ลืม start, parity, stop`,`9 บิต ลืม start และ stop`,`10 บิต ลืม parity (นี่คือ 8N1)`,null]},
+
+{id:"u2",
+ t:"uart",
+ q:`ส่ง 'K' (0x4B) แบบ even parity บิต parity มีค่าเท่าใด`,
+ o:[`0 เพราะ 0x4B มีบิต 1 อยู่ 4 ตัว เป็นเลขคู่แล้ว`,`1 เพราะ 0x4B มีบิต 1 อยู่ 3 ตัว`,`1 เพราะ even parity เติม 1 เสมอ`,`0 เพราะ LSB ของ 0x4B เป็น 1`],
+ a:0,
+ x:`0x4B = 0100 1011 มีบิต 1 อยู่ <b>4 ตัว</b> (เลขคู่) even parity ต้องทำให้จำนวน 1 ทั้งหมดเป็นคู่ จึงเติม <b>0</b> (ถ้าเป็น odd parity จะเติม 1)`,
+ k:[`0x4B = 0100 1011 มี 1 สี่ตัว`,`even: จำนวน 1 รวมต้องคู่ → 0`],
+ w:[null,`นับผิด`,`parity ขึ้นกับจำนวน 1 ใน data`,`parity ไม่ได้ดูแค่ LSB เหตุผลผิดแม้คำตอบเป็น 0`]},
+
+{id:"u3",
+ t:"uart",
+ q:`ส่ง 'C' (0x43) แบบ 8N1 สัญญาณบนสาย TX เรียงตามเวลาหลัง idle คือข้อใด (start | data | stop)`,
+ o:[`0 | 0 1 0 0 0 0 1 1 | 1`,`1 | 1 1 0 0 0 0 1 0 | 0`,`0 | 1 1 0 0 0 0 1 0 | 1`,`0 | 1 1 0 0 0 0 1 0 | 0`],
+ a:2,
+ x:`Idle = 1, start bit = <b>0</b> แล้วส่ง data แบบ <b>LSB first</b>: 0x43 = 0100 0011 อ่านจาก bit0 ถึง bit7 ได้ 1 1 0 0 0 0 1 0 จบด้วย stop bit = <b>1</b>`,
+ k:[`start = 0, stop = 1`,`ส่ง LSB first`],
+ w:[`ส่ง MSB first ซึ่ง UART ไม่ใช้`,`start/stop กลับด้าน`,null,`stop ต้องเป็น 1 ไม่เช่นนั้นเกิด framing error`]},
+
+{id:"u4",
+ t:"uart",
+ q:`f<sub>CLK</sub> = 16 MHz, OVER8 = 0 ต้องการ 9600 bps ค่า <code>USART2->BRR</code> คือ`,
+ o:[`1666 (0x682)`,`1667 (0x683)`,`104 (0x68)`,`139 (0x8B)`],
+ a:1,
+ x:`BRR = round(f<sub>CLK</sub> / baud) = round(16,000,000 / 9600) = round(1666.67) = <b>1667 = 0x683</b> ใน HAL แค่ใส่ Init.BaudRate = 9600 แล้ว HAL คำนวณค่านี้ให้จาก PCLK1`,
+ k:[`BRR = round(fCLK / baud)`,`16 M / 9600 = 1666.7 → 1667`],
+ w:[`ใช้ floor แทน round`,null,`104 คือเวลาต่อบิต (µs)`,`139 คือค่าของ 115200`]},
+
+{id:"u5",
+ t:"uart",
+ q:`บอร์ดส่ง "Hello" ที่ 9600 bps แต่ serial terminal ตั้งไว้ 115200 bps จะเห็นอะไร`,
+ o:[`เห็น "Hello" แต่ช้าลง`,`เห็นตัวอักษรขยะหรือไม่เห็นเลย เพราะ receiver sample บิตผิดจังหวะ`,`เห็นถูกต้องเพราะ start bit ช่วย sync`,`terminal ปรับ baud ให้อัตโนมัติ`],
+ a:1,
+ x:`UART เป็น <b>asynchronous</b> ไม่มี clock ร่วม ทั้งสองฝั่งต้องตกลง baud เดียวกัน receiver ใช้ baud ของตัวเองกำหนดจุด sample แต่ละบิตหลัง falling edge ของ start bit ถ้า baud ไม่ตรง จุด sample จะไม่อยู่กลางบิต ข้อมูลผิดและมักเกิด framing error`,
+ k:[`asynchronous ต้องใช้ baud ตรงกัน`,`sample ผิดจังหวะ → ข้อมูลผิด/framing error`],
+ w:[`baud กำหนดจุด sample ไม่ได้กำหนดแค่ความเร็วแสดงผล`,null,`start bit sync แค่จุดเริ่ม ระยะแต่ละบิตยังมาจาก baud`,`UART ทั่วไปไม่มี auto-baud`]},
+
+{id:"u6",
+ t:"uart",
+ q:`เขียนไบต์สุดท้ายลง DR แล้วต้องการปิด USART2 (UE = 0) โดยไม่ให้ไบต์สุดท้ายเสีย ต้องรอ flag ใด`,
+ o:[`TXE = 1`,`TC = 1`,`RXNE = 1`,`ไม่ต้องรอ`],
+ a:1,
+ x:`TXE = 1 แปลว่า DR ว่าง ข้อมูลเข้า shift register แล้วแต่<b>อาจยังส่งไม่จบ</b> ส่วน <b>TC = 1</b> แปลว่า frame สุดท้ายรวม stop bit ส่งเสร็จแล้วจริง (Step 8 ในสไลด์)`,
+ k:[`TXE = DR ว่าง แต่ยังอาจกำลังส่ง`,`TC = ส่งจบจริง`],
+ w:[`TXE ยังไม่รับประกันว่าส่งจบ`,null,`RXNE เป็นฝั่งรับ`,`ปิดทันทีจะตัด frame ที่กำลังส่ง`]},
+
+{id:"u7",
+ t:"uart",
+ q:`ฟังก์ชันนี้ไม่รอ TXE เมื่อส่ง "Hello\\r\\n" ที่ 115200 bps จะเห็นผลอย่างไร`,
+ code:`static void UART2_TxString(char strOut[]){
+    for (uint8_t idx = 0; strOut[idx] != '\\0'; idx++){
+        USART2->DR = strOut[idx];
+    }
+}`,
+ o:[`เห็นครบทุกตัว`,`เห็นแค่บางตัว (มักเป็นตัวแรกและตัวท้าย) ตัวกลางหาย`,`เห็นทุกตัวแต่กลับด้าน`,`ไม่เห็นอะไรเพราะ USART ค้าง`],
+ a:1,
+ x:`CPU เขียน DR ได้เร็วกว่าการส่ง 1 frame (~87 µs ที่ 115200) มาก ข้อมูลใหม่จึง<b>เขียนทับ DR</b> ก่อนจะถูกย้ายเข้า shift register เหลือแค่ตัวแรกที่เข้า shift register ทันทีกับตัวที่เขียนท้ายสุด ต้องรอ TXE = 1 ก่อนเขียนทุกครั้ง (HAL_UART_Transmit ทำให้อัตโนมัติ)`,
+ k:[`ต้องรอ TXE ก่อนเขียน DR`,`CPU เร็วกว่า UART ข้อมูลถูกเขียนทับ`],
+ w:[`baud สูงแค่ไหนก็ช้ากว่า CPU`,null,`ไม่มีกลไกกลับลำดับ`,`USART ไม่ค้าง`]},
+
+{id:"u8",
+ t:"uart",
+ q:`โค้ดแบบ Lab 3.3 เช็ค RXNE แล้วเรียก DELAY_SEC (≈1 s) ทุกรอบ ถ้าผู้ใช้พิมพ์ '1', 'G', 'G' ติดกันภายในช่วง delay เดียว เมื่อออกจาก delay โปรแกรมจะอ่าน DR ได้อะไร`,
+ code:`while(1){
+    if ((USART2->SR & USART_SR_RXNE) != 0){
+        char c = USART2->DR;
+        /* ทำงานตาม c */
+    }
+    DELAY_SEC;          // for-loop ≈ 1 s
+}`,
+ o:[`ได้ครบ 3 ตัวทีละรอบ เพราะ USART มี FIFO`,`ได้ 'G' ตัวสุดท้าย เพราะข้อมูลใหม่เขียนทับ`,`ได้ '1' ส่วน 'G' ทั้งสองตัวหาย เพราะเกิด overrun (ORE)`,`อ่านได้ 0 เพราะ ORE ล้าง DR`],
+ a:2,
+ x:`USART ของ F411 เก็บข้อมูลรับได้แค่ <b>1 ไบต์</b> (DR) '1' เข้า DR และ RXNE = 1 เมื่อ 'G' รับครบตอนที่ RXNE ยังเป็น 1 จะเกิด <b>overrun</b>: ORE = 1 ค่าเก่าใน DR ยังอยู่ แต่ไบต์ใหม่หาย polling คู่กับ blocking delay จึงพลาดข้อมูล ต้องใช้ RXNE interrupt หรือ DMA`,
+ k:[`มี buffer รับแค่ 1 ไบต์ ไม่มี FIFO`,`overrun: ไบต์ใหม่หาย ไบต์แรกยังอยู่`,`blocking delay ทำให้อ่านไม่ทัน`],
+ w:[`F411 USART ไม่มี FIFO`,`F4 ไม่เขียนทับ DR ไบต์ใหม่ต่างหากที่หาย`,null,`ORE ไม่ได้ล้าง DR`]},
+
+{id:"u9",
+ t:"uart",
+ q:`โค้ดจาก Lab 3.1B ตั้ง PA2 ให้เป็น USART2_TX (ตาราง Alternate function: PA2 → USART2_TX อยู่ที่ AF07) ช่องว่างควรเป็นค่าใด และเพราะอะไร`,
+ code:`GPIOA->MODER  &= ~GPIO_MODER_MODER2;
+GPIOA->MODER  |= (____ << GPIO_MODER_MODER2_Pos);
+GPIOA->AFR[0] &= ~GPIO_AFRL_AFRL2;
+GPIOA->AFR[0] |= (7 << GPIO_AFRL_AFSEL2_Pos);`,
+ o:[`0b01 เพื่อให้เป็น output`,`0b10 เพื่อให้เป็น alternate function ให้ USART2 เป็นผู้ขับขา`,`0b11 เพื่อให้เป็น analog`,`0b00 เพราะ TX เป็น input`],
+ a:1,
+ x:`การให้ peripheral ภายใน (USART2) ใช้ขา ต้องตั้ง MODER = <b>10 (alternate function)</b> แล้วเลือกว่าเป็น peripheral ใดด้วย AFR ซึ่งบรรทัดท้ายใส่ <b>7 = AF7 = USART2</b> ขา 2 อยู่ใน AFR[0] (AFRL) เพราะเป็นขา 0–7`,
+ k:[`ให้ peripheral ใช้ขาต้องเป็น AF (10)`,`AFR[0] = 7 เลือก USART2`],
+ w:[`output mode ขาจะถูก ODR ขับ ไม่ใช่ USART`,null,`analog ตัดทาง digital`,`TX เป็นขาที่ส่งออก และ input ไม่ได้ต่อกับ USART TX`]},
+
+{id:"u10",
+ t:"uart",
+ q:`ช่องว่าง 1 และ 2 ควรเป็นอะไร`,
+ code:`USART2->CR1 |= ___1___;              // เปิดภาครับ
+while(1){
+    if ((USART2->SR & ___2___) != 0){
+        if (USART2->DR == '1') { ... }
+    }
+}`,
+ o:[`1 = USART_CR1_TE, 2 = USART_SR_TXE`,`1 = USART_CR1_RE, 2 = USART_SR_RXNE`,`1 = USART_CR1_RXNEIE, 2 = USART_SR_TC`,`1 = USART_CR1_UE, 2 = USART_SR_ORE`],
+ a:1,
+ x:`การรับต้องเปิด receiver ด้วยบิต <b>RE</b> แล้ว polling ดู <b>RXNE</b>: RXNE = 1 แปลว่ามีข้อมูลใน DR พร้อมอ่าน และการอ่าน DR จะล้าง RXNE ให้เอง`,
+ k:[`RE เปิดภาครับ`,`RXNE = มีข้อมูลรออ่าน`],
+ w:[`TE/TXE เป็นฝั่งส่ง`,null,`RXNEIE เปิด interrupt และ TC เป็นฝั่งส่ง`,`ORE เป็น error ไม่ใช่สัญญาณมีข้อมูลปกติ`]},
+
+{id:"u11",
+ t:"uart",
+ q:`โค้ดนี้มีปัญหาอะไร`,
+ code:`char buf[8];
+uint16_t adc = 4095;
+sprintf(buf, "ADC=%d\\r\\n", adc);
+UART2_TxString(buf);`,
+ o:[`ไม่มีปัญหา`,`sprintf ตัดข้อความให้พอดี 8 ไบต์`,`ข้อความต้องใช้ 11 ไบต์รวม '\\0' จึงเขียนเกิน buf (buffer overflow)`,`HAL_UART_Transmit ส่ง \\r\\n ไม่ได้`],
+ a:2,
+ x:`"ADC=4095\\r\\n" มี 10 ตัวอักษร และ sprintf เติม '\\0' อีก 1 รวม <b>11 ไบต์</b> แต่ buf มี 8 ไบต์ sprintf ไม่ตรวจขนาด จึงเขียนทับหน่วยความจำข้างเคียง (undefined behavior) ต้องขยาย buf หรือใช้ snprintf(buf, sizeof buf, …)`,
+ k:[`นับได้ 10 ตัว + '\\0' = 11 ไบต์ > 8`,`sprintf ไม่ตรวจขนาด → overflow`],
+ w:[`อาจดูเหมือนทำงาน แต่หน่วยความจำถูกเขียนทับแล้ว`,`นั่นคือ snprintf`,null,`\\r, \\n เป็น ASCII ปกติ ส่งได้`]},
+
+{id:"u12",
+ t:"uart",
+ q:`ทุกครั้งที่ sample ADC ต้องส่งข้อความ 10 ไบต์ผ่าน UART 115200 bps แบบ 8N1 อัตรา sampling สูงสุดที่ UART ยังส่งทันประมาณเท่าใด`,
+ o:[`115 Hz`,`1,152 Hz`,`1,440 Hz`,`11,520 Hz`],
+ a:1,
+ keep:true,
+ x:`8N1 ใช้ <b>10 บิตต่อไบต์</b> → 115200 / 10 = 11,520 ไบต์/วินาที หารด้วย 10 ไบต์ต่อข้อความได้ <b>≈ 1,152 ข้อความ/วินาที</b>`,
+ k:[`8N1 = 10 บิตต่อไบต์`,`11,520 B/s ÷ 10 B`],
+ w:[`หารผิดไป 10 เท่า`,null,`คิด 8 บิตต่อไบต์ ลืม start/stop`,`นั่นคือไบต์/วินาที`]},
+
+{id:"u13",
+ t:"uart",
+ q:`<code>char msg[] = "Hi\\r\\n";</code> แล้วส่งด้วยฟังก์ชันที่ส่งตามจำนวนไบต์ที่ให้ <code>HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg), 100);</code> จะส่งกี่ไบต์ และมีผลอย่างไร`,
+ o:[`4 ไบต์ ถูกต้อง`,`5 ไบต์ เพราะ sizeof นับ '\\0' ด้วย จึงส่ง 0x00 ตามไปอีก 1 ไบต์`,`2 ไบต์ เพราะ \\r\\n ไม่นับ`,`8 ไบต์ เพราะ sizeof ของ pointer`],
+ a:1,
+ x:`string literal ถูกเติม '\\0' ท้ายเสมอ array <code>msg[]</code> จึงมีขนาด 2 + 2 + 1 = <b>5 ไบต์</b> sizeof คืนขนาด array ทั้งหมด จึงส่ง 0x00 ออกไปด้วย ควรใช้ <code>strlen(msg)</code> = 4 (msg เป็น array ไม่ใช่ pointer จึงไม่ใช่ขนาดของ pointer)`,
+ k:[`sizeof นับ '\\0' → 5`,`ควรใช้ strlen = 4`],
+ w:[`นั่นคือผลของ strlen`,null,`\\r และ \\n เป็นตัวอักษรละ 1 ไบต์`,`msg เป็น array ไม่ใช่ pointer`]},
+
+{id:"u14",
+ t:"uart",
+ q:`ตั้ง USART2 ด้วยบิต M = 0 (word 8 บิต) และเปิด parity (PCE = 1, PS = 0 even) จะได้ frame แบบใด (ใน HAL คือ UART_WORDLENGTH_8B + UART_PARITY_EVEN)`,
+ o:[`data 8 บิต + parity 1 บิต`,`data 7 บิต + parity 1 บิต รวม word 8 บิต ถ้าต้องการ data 8 บิต + parity ต้องตั้ง M = 1 (9 บิต)`,`ตั้งไม่ได้ เพราะ M = 0 ใช้ parity ไม่ได้`,`parity ถูกส่งหลัง stop bit`],
+ a:1,
+ x:`บน STM32 word length <b>รวม parity</b> ด้วย เมื่อ PCE = 1 บิตบนสุดของ word จะกลายเป็น parity word 8 บิตจึงเหลือ data <b>7 บิต</b> ถ้าต้องการ 8E1 จริงต้องตั้ง <b>M = 1</b> (word 9 บิต)`,
+ k:[`word length รวม parity`,`M = 0 + parity → data 7 บิต ต้อง M = 1 สำหรับ 8 data`],
+ w:[`ต้อง M = 1 จึงได้ 8 data + parity`,null,`ตั้งได้ แต่ data เหลือ 7 บิต`,`parity อยู่ก่อน stop bit`]},
+
+{id:"u15",
+ t:"uart",
+ q:`เปิด RXNEIE ของ USART2 และเปิด USART2_IRQn ใน NVIC แล้วเขียน ISR ดังนี้ เมื่อมีไบต์เข้ามา 1 ตัว จะเกิดอะไรขึ้น`,
+ code:`volatile uint8_t g_flag = 0;
+void USART2_IRQHandler(void){
+    if (USART2->SR & USART_SR_RXNE) {
+        g_flag = 1;          // ไม่ได้อ่าน USART2->DR
+    }
+}`,
+ o:[`ISR ทำงานครั้งเดียวแล้วรอไบต์ถัดไป`,`ISR ถูกเรียกซ้ำไม่หยุด เพราะ RXNE ไม่ถูกล้าง (ต้องอ่าน DR) main แทบไม่ได้ทำงาน`,`USART ล้าง RXNE ให้เองเมื่อออกจาก ISR`,`เกิด framing error`],
+ a:1,
+ x:`RXNE ถูกล้าง<b>เมื่ออ่าน USART2->DR</b> เท่านั้น ISR นี้ไม่ได้อ่าน DR RXNE จึงยังเป็น 1 และ RXNEIE ยังเปิด request ไป NVIC จึงค้าง พอออกจาก ISR ก็เข้าใหม่ทันที ต้องเขียน <code>c = USART2->DR;</code> ใน ISR (ซึ่งยังได้ข้อมูลมาใช้ด้วย)`,
+ k:[`RXNE ล้างด้วยการอ่าน DR`,`flag ค้าง + interrupt เปิด → ISR วนซ้ำ`],
+ w:[`จะเป็นแบบนั้นถ้าอ่าน DR`,null,`ฮาร์ดแวร์ไม่ล้างให้เมื่อออกจาก ISR`,`framing error เกิดจาก stop bit ผิด ไม่เกี่ยว`]},
+
+{id:"u16",
+ t:"uart",
+ q:`ฟังก์ชันนี้บางครั้งส่งข้อความเพี้ยน สาเหตุคืออะไร`,
+ code:`void sendValue(uint16_t v){
+    char buf[20];
+    sprintf(buf, "V=%u\\r\\n", v);
+    /* ส่งแบบ interrupt: ฟังก์ชันคืนค่าทันที
+       แล้ว ISR ค่อยๆ อ่านไบต์จาก buf ไปส่ง */
+    HAL_UART_Transmit_IT(&huart2, (uint8_t*)buf, strlen(buf));
+}`,
+ o:[`ต้องใช้ uint32_t แทน uint16_t`,`buf เป็นตัวแปร local บน stack ฟังก์ชัน return ก่อนส่งเสร็จ หน่วยความจำนั้นถูกใช้ทับ ต้องใช้ buffer แบบ static หรือ global`,`HAL_UART_Transmit_IT ส่งได้ทีละ 1 ไบต์`,`ลืมเรียก HAL_Delay หลังส่ง`],
+ a:1,
+ x:`Transmit_IT <b>ไม่รอให้ส่งเสร็จ</b> มันคืนค่าทันทีแล้วให้ ISR ค่อยๆ อ่านไบต์จาก pointer ที่ให้ไว้ แต่ buf เป็นตัวแปร local พอฟังก์ชัน return พื้นที่ stack นั้นจะถูกใช้ทับโดยฟังก์ชันอื่น ISR จึงอ่านข้อมูลขยะ buffer ของ _IT/_DMA ต้องมีอายุจนส่งเสร็จ (static/global)`,
+ k:[`_IT คืนค่าทันที ส่งเบื้องหลัง`,`buf local หมดอายุเมื่อ return → ใช้ static/global`],
+ w:[`ชนิดตัวแปรไม่เกี่ยว`,null,`ส่งได้หลายไบต์ตาม Size`,`delay ไม่ใช่วิธีแก้ที่ถูก`]},
+
+{id:"u17",
+ t:"uart",
+ q:`ส่งข้อมูลด้วย interrupt: เปิด TXEIE แล้วใน ISR เขียน DR ทีละไบต์จาก buffer เมื่อส่งไบต์สุดท้ายแล้วไม่ได้ปิด TXEIE จะเกิดอะไรขึ้น`,
+ o:[`ไม่มีผล เพราะไม่มีข้อมูลให้ส่งแล้ว`,`USART2_IRQHandler ถูกเรียกซ้ำไม่หยุด เพราะ TXE = 1 ค้างอยู่ตลอดเมื่อ DR ว่าง`,`USART ส่ง 0x00 ออกไปเรื่อยๆ`,`เกิด overrun ฝั่งส่ง`],
+ a:1,
+ x:`TXE = 1 แปลว่า DR ว่าง และจะเป็น 1 ค้างตราบใดที่ไม่มีการเขียน DR ใหม่ ถ้า TXEIE ยังเปิด NVIC จะได้ request ตลอด ISR จึงถูกเรียกวนไป ต้อง<b>ปิด TXEIE เมื่อ buffer ว่าง</b>`,
+ k:[`TXE = 1 ค้างเมื่อ DR ว่าง`,`ต้องปิด TXEIE หลังไบต์สุดท้าย`],
+ w:[`flag ยังเป็น 1 และ interrupt ยังเปิด`,null,`USART ส่งเฉพาะเมื่อเขียน DR`,`overrun เป็นเรื่องฝั่งรับ`]},
+
+{id:"u18",
+ t:"uart",
+ q:`ที่ 9600 bps (8N1) เรียก <code>HAL_UART_Transmit(&huart2, data, 100, 10)</code> ซึ่งส่ง 100 ไบต์แบบรอจนเสร็จ โดยกำหนด timeout 10 ms ผลน่าจะเป็นอย่างไร`,
+ o:[`ส่งครบ 100 ไบต์ คืน HAL_OK`,`ส่งได้ราว 9–10 ไบต์แล้วหมดเวลา (HAL_TIMEOUT) เพราะ 100 ไบต์ต้องใช้ประมาณ 104 ms`,`ส่งไม่ได้เลยเพราะ USART ยังไม่ว่าง`,`ส่งครบแต่ช้ากว่าปกติ 10 เท่า`],
+ a:1,
+ x:`100 ไบต์ × 10 บิต = 1000 บิต ÷ 9600 ≈ <b>104 ms</b> ซึ่งมากกว่า timeout 10 ms ใน 10 ms ส่งได้ประมาณ 10 / 1.04 ≈ 9–10 ไบต์ แล้ว HAL หยุดและคืน <b>HAL_TIMEOUT</b> ต้องตั้ง timeout ให้มากกว่าเวลาส่งจริง หรือใช้ HAL_MAX_DELAY`,
+ k:[`เวลาส่ง ≈ 1000 / 9600 ≈ 104 ms`,`เกิน timeout → HAL_TIMEOUT ส่งไม่ครบ`],
+ w:[`เวลาไม่พอ`,null,`ไม่มีการส่งอื่นค้างอยู่`,`timeout ไม่ได้ลดความเร็ว`]},
+
+{id:"u19",
+ t:"uart",
+ q:`ข้อใดอธิบาย oversampling ของ UART receiver (UART_OVERSAMPLING_16) ได้ถูกต้อง`,
+ o:[`ส่งแต่ละบิตซ้ำ 16 ครั้งเพื่อความชัวร์`,`receiver sample สัญญาณเร็วกว่า baud 16 เท่า แล้วตัดสินค่าบิตจาก sample ช่วงกลางบิต (majority) ทำให้ทนสัญญาณรบกวนและ clock คลาดได้ดีขึ้น`,`ทำให้ baud สูงขึ้น 16 เท่า`,`ใช้กับ synchronous communication เท่านั้น`],
+ a:1,
+ x:`เพราะ UART ไม่มี clock ร่วม receiver จึงใช้ clock ภายในที่เร็วกว่า baud (16× หรือ 8×) หาขอบ start bit แล้ว sample หลายจุดกลางบิตและใช้ <b>majority logic</b> ตัดสิน 0/1 OVER8 ทำ baud สูงสุดได้มากขึ้นแต่ทนความคลาดเคลื่อนได้น้อยลง`,
+ k:[`sample เร็วกว่า baud 16×`,`ตัดสินกลางบิตด้วย majority → ทน noise/clock drift`],
+ w:[`ฝั่งส่งไม่ได้ส่งซ้ำ`,null,`baud ไม่ได้เปลี่ยน`,`oversampling ใช้กับ asynchronous`]},
+
+{id:"u20",
+ t:"uart",
+ q:`main loop poll ปุ่ม แล้วส่ง log 48 ไบต์ด้วย <code>HAL_UART_Transmit</code> (blocking) ที่ 9600 bps 8N1 ทุกรอบ latency สูงสุดในการตอบสนองปุ่มประมาณเท่าใด`,
+ o:[`5 ms`,`40 ms`,`50 ms`,`500 ms`],
+ a:2,
+ keep:true,
+ x:`48 ไบต์ × 10 บิต = 480 บิต ÷ 9600 = <b>0.05 s = 50 ms</b> ระหว่างนั้น CPU ติดอยู่ใน HAL_UART_Transmit ไม่ได้อ่านปุ่ม ถ้ากดตอนเริ่มส่งต้องรอ ≈ 50 ms แก้ด้วย EXTI หรือส่งแบบ _IT/_DMA`,
+ k:[`480 บิต ÷ 9600 = 50 ms`,`blocking transmit ทำให้ไม่อ่านปุ่ม`],
+ w:[`ผิดไป 10 เท่า`,`คิด 8 บิตต่อไบต์ ลืม start/stop`,null,`มากกว่าค่าจริง 10 เท่า`]},
+
+{id:"a1",
+ t:"adc",
+ q:`ADC 12-bit, V<sub>REF+</sub> = 3.3 V อ่านค่า potentiometer ที่ PA0 ได้ 1024 แรงดันประมาณเท่าใด (ไม่ใช้เครื่องคิดเลข)`,
+ o:[`0.41 V`,`0.83 V`,`1.65 V`,`2.48 V`],
+ a:1,
+ keep:true,
+ x:`1024 คือ 1/4 ของสเกลเต็ม 4096 แรงดัน ≈ 3.3 / 4 = <b>0.825 V</b> (V = raw × 3.3 / 4095 ให้ผลใกล้เคียงกัน)`,
+ k:[`1024 ≈ 1/4 ของ 4096`,`3.3 / 4 ≈ 0.83 V`],
+ w:[`นั่นคือ 1/8 ของสเกล (raw ≈ 512)`,null,`นั่นคือครึ่งสเกล (raw ≈ 2048)`,`นั่นคือ 3/4 ของสเกล (raw ≈ 3072)`]},
+
+{id:"a2",
+ t:"adc",
+ q:`หมุน potentiometer ให้ PA0 มีแรงดัน 1.65 V ค่าที่อ่านจาก ADC 12-bit ควรประมาณเท่าใด`,
+ o:[`1024`,`1650`,`2048`,`4095`],
+ a:2,
+ keep:true,
+ x:`1.65 V คือครึ่งหนึ่งของ V<sub>REF</sub> 3.3 V ค่าที่ได้ ≈ ครึ่งของ 4095 ≈ <b>2047–2048</b> (raw = V / V<sub>REF</sub> × 4095)`,
+ k:[`1.65 V = ครึ่งของ 3.3 V`,`ครึ่งของ 4095 ≈ 2048`],
+ w:[`นั่นคือ 1/4 ของสเกล`,`เอาค่า mV มาใส่ตรงๆ ซึ่งผิดหน่วย`,null,`นั่นคือ 3.3 V เต็มสเกล`]},
+
+{id:"a3",
+ t:"adc",
+ q:`ตั้ง ADC เป็นความละเอียด 8-bit (CR1.RES = 10) ที่ V<sub>REF</sub> = 3.3 V ค่าสูงสุดและขนาด 1 LSB ประมาณเท่าใด`,
+ o:[`255 และ ≈ 13 mV`,`4095 และ ≈ 0.8 mV`,`256 และ ≈ 3.2 mV`,`1023 และ ≈ 3.2 mV`],
+ a:0,
+ x:`n บิตอ่านได้ 0 ถึง 2ⁿ − 1 → 8-bit ได้ <b>0–255</b> และ 1 LSB = 3.3 / 256 ≈ <b>13 mV</b> แปลงเร็วกว่า (8 cycles แทน 12) แต่หยาบกว่า 12-bit 16 เท่า`,
+ k:[`ค่าสูงสุด 2⁸ − 1 = 255`,`LSB = 3.3 / 256 ≈ 13 mV`],
+ w:[null,`นั่นคือ 12-bit`,`ค่าสูงสุดคือ 255 และ 3.2 mV เป็นของ 10-bit`,`นั่นคือ 10-bit`]},
+
+{id:"a4",
+ t:"adc",
+ q:`ADCCLK = 8 MHz, sampling time = 84 cycles, ความละเอียด 12-bit การแปลง 1 ครั้งใช้เวลาเท่าใด`,
+ o:[`1.5 µs`,`6 µs`,`10.5 µs`,`12 µs`],
+ a:3,
+ keep:true,
+ x:`T<sub>conv</sub> = sampling + 12 cycles = 84 + 12 = <b>96 cycles</b> ÷ 8 MHz = <b>12 µs</b>`,
+ k:[`รวม sampling + 12 cycles = 96`,`96 / 8 MHz = 12 µs`],
+ w:[`นับแค่ 12 cycles`,`ใช้ 16 MHz แต่ ADC prescaler ต่ำสุดคือ /2`,`นับแค่ sampling 84 cycles`,null]},
+
+{id:"a5",
+ t:"adc",
+ q:`โค้ดต่อไปนี้ตั้ง ADC1 เพื่ออ่าน potentiometer ที่ PA0 ข้อใดอธิบายถูก`,
+ code:`RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+GPIOA->MODER |= GPIO_MODER_MODER0;   // ฟิลด์ MODER0 = 11
+ADC1->SQR1   &= ~ADC_SQR1_L;         // L = 0
+ADC1->SQR3    = 0;                   // SQ1 = 0
+ADC1->CR2    |= ADC_CR2_ADON;`,
+ o:[`PA0 เป็น analog, แปลง 1 ช่องคือ ADC1_IN0 แล้วเปิด ADC`,`PA0 เป็น output, แปลง 0 ช่อง`,`PA0 เป็น analog แต่แปลงช่อง IN5`,`ใช้ไม่ได้เพราะยังไม่ได้ตั้ง AFR ให้ ADC`],
+ a:0,
+ x:`MODER0 = 11 คือ <b>analog mode</b> ส่งสัญญาณไป ADC · SQR1.L = 0 แปลว่าลำดับมี <b>L + 1 = 1 ช่อง</b> · SQ1 = 0 คือช่องแรกเป็น <b>IN0 = PA0</b> · ADON เปิด ADC (และเปิด clock ADC1 ใน APB2ENR แล้ว)`,
+ k:[`MODER0 = 11 = analog`,`L = 0 → 1 ช่อง, SQ1 = 0 → IN0 (PA0)`],
+ w:[null,`MODER = 11 คือ analog และ L = 0 หมายถึง 1 ช่อง`,`IN5 คือ PA5 แต่ SQ1 = 0`,`ADC ไม่ได้เลือกผ่าน AFR`]},
+
+{id:"a6",
+ t:"adc",
+ q:`ลำดับการอ่าน ADC แบบ polling หนึ่งครั้งข้อใดถูก (ใน HAL เทียบได้กับ HAL_ADC_Start → HAL_ADC_PollForConversion → HAL_ADC_GetValue)`,
+ o:[`อ่าน ADC1->DR → ตั้ง SWSTART → รอ EOC`,`ตั้ง SWSTART → รอ EOC = 1 → อ่าน ADC1->DR`,`รอ EOC = 1 → ตั้ง SWSTART → อ่าน DR`,`ตั้ง SWSTART → อ่าน DR → รอ EOC`],
+ a:1,
+ x:`ต้อง<b>เริ่มแปลง</b> (SWSTART) → <b>รอให้เสร็จ</b> (EOC = 1) → <b>อ่านผล</b> (DR ซึ่งล้าง EOC ด้วย) ถ้าอ่านก่อนเสร็จจะได้ค่าเก่า ถ้ารอก่อนเริ่มจะรอไม่จบ`,
+ k:[`SWSTART → รอ EOC → อ่าน DR`,`อ่านก่อนเสร็จได้ค่าเก่า`],
+ w:[`อ่านก่อนเริ่มแปลง`,null,`ยังไม่ได้เริ่ม EOC ไม่มาจะรอไม่จบ`,`อ่านก่อนแปลงเสร็จ`]},
+
+{id:"a7",
+ t:"adc",
+ q:`CONT = 0 (single conversion) โปรแกรมด้านล่างจะเป็นอย่างไรเมื่อรัน`,
+ code:`ADC1->CR2 |= ADC_CR2_SWSTART;            // สั่งครั้งเดียว
+while (1) {
+    while (!(ADC1->SR & ADC_SR_EOC));    // รอแปลงเสร็จ
+    raw = ADC1->DR;
+    /* ใช้ค่า raw ... */
+}`,
+ o:[`อ่านค่าใหม่ได้ทุกรอบตาม pot`,`ได้ค่าแรกค่าเดียว รอบที่สองค้างใน while รอ EOC ตลอดไป เพราะ single mode แปลงครั้งเดียวต่อการสั่ง SWSTART`,`ได้ 0 ทุกรอบ`,`ADC แปลงต่อเองเพราะอยู่ใน while(1)`],
+ a:1,
+ x:`Single mode แปลง <b>1 ครั้งต่อการสั่ง SWSTART</b> รอบแรกได้ค่าและการอ่าน DR ล้าง EOC รอบที่สองไม่มีการแปลงใหม่ EOC จึงไม่ขึ้น โปรแกรม<b>ค้างใน while รอ EOC</b> แก้โดยย้าย SWSTART เข้าไปในลูป หรือตั้ง CONT = 1`,
+ k:[`single mode: SWSTART 1 ครั้ง = แปลง 1 ครั้ง`,`รอบสอง EOC ไม่ขึ้น → ค้าง`],
+ w:[`ไม่มีการแปลงใหม่`,null,`รอบแรกได้ค่าจริง จากนั้นค้าง`,`ลูปของ CPU ไม่ได้สั่ง ADC`]},
+
+{id:"a8",
+ t:"adc",
+ q:`ต่อเซนเซอร์ที่ output impedance สูง และตั้ง sampling time ของช่องนั้นเป็น 3 cycles (SMPR) แล้วค่าต่ำกว่าจริงและแกว่ง วิธีแก้ที่ตรงจุดที่สุดคือ`,
+ o:[`เพิ่ม sampling time เช่น 480 cycles`,`ลดความละเอียดเป็น 8-bit`,`เปิด pull-up ที่ขา`,`เปิด continuous mode (CONT = 1)`],
+ a:0,
+ x:`ช่วง sampling คือช่วงที่ตัวเก็บประจุ <b>sample-and-hold</b> ชาร์จผ่านความต้านทานของแหล่งสัญญาณ ถ้า impedance สูงแต่ sampling สั้น ประจุยังไม่เต็ม ค่าจึงต่ำกว่าจริง การเพิ่ม sampling time ให้เวลาชาร์จนานขึ้น (แลกกับแปลงช้าลง)`,
+ k:[`S/H capacitor ชาร์จไม่ทัน`,`เพิ่ม sampling time`],
+ w:[null,`ไม่ได้แก้การชาร์จ S/H`,`analog mode ปิด pull และ pull จะทำให้เพี้ยน`,`แต่ละครั้งยัง sample สั้นเท่าเดิม`]},
+
+{id:"a9",
+ t:"adc",
+ q:`ในโค้ด polling ADC การอ่าน <code>raw = ADC1->DR;</code> มีผลกับ flag EOC อย่างไร (HAL_ADC_GetValue ก็อ่าน DR แบบเดียวกัน)`,
+ o:[`ไม่มีผล ต้องล้าง EOC ด้วยการเขียน 1`,`การอ่าน DR ทำให้ EOC ถูกล้างโดยอัตโนมัติ`,`ตั้ง EOC ให้เป็น 1`,`ปิด ADC`],
+ a:1,
+ x:`ตาม Reference Manual บิต EOC ถูกตั้งโดยฮาร์ดแวร์เมื่อแปลงเสร็จ และถูกล้าง<b>เมื่ออ่าน ADC_DR</b> (หรือซอฟต์แวร์เขียน 0) จึงไม่ต้องล้างเอง ต่างจาก EXTI->PR ที่ต้องเขียน 1`,
+ k:[`อ่าน DR = ล้าง EOC`,`ต่างจาก EXTI PR ที่ล้างด้วยการเขียน 1`],
+ w:[`เขียน 1 เพื่อล้างเป็นวิธีของ EXTI_PR`,null,`ฮาร์ดแวร์เป็นผู้ตั้ง EOC เมื่อแปลงเสร็จ`,`ไม่ได้ปิด ADC`]},
+
+{id:"a10",
+ t:"adc",
+ q:`ADC ทำงาน continuous mode โดย EOCS = 1 (EOC ทุกการแปลง) ขณะที่ main loop ส่ง UART แบบรอ TXE หลาย ms ก่อนกลับมาอ่าน DR จะเกิดอะไรขึ้น`,
+ o:[`ค่าเก่าถูกเก็บไว้ให้อ่านทีละค่าแบบ FIFO`,`เกิด overrun (OVR = 1) ค่าที่แปลงระหว่างนั้นหาย`,`ADC หยุดรอ CPU`,`ไม่มีปัญหาใดๆ`],
+ a:1,
+ x:`ADC แปลงทุกไม่กี่ µs แต่ CPU อ่านทุกหลาย ms ค่าใหม่มาก่อนที่ค่าเก่าจะถูกอ่าน ฮาร์ดแวร์ตั้ง <b>OVR</b> และค่าที่ไม่ได้อ่านหายไป แก้ด้วย <b>DMA</b> ให้ย้ายค่าอัตโนมัติ หรือใช้ interrupt/timer trigger แทนการ polling ช้าๆ`,
+ k:[`มี DR ตัวเดียว อ่านไม่ทัน → overrun`,`แก้ด้วย DMA หรือ interrupt`],
+ w:[`ไม่มี FIFO`,null,`ADC ไม่รอ CPU`,`EOCS = 1 เปิดการตรวจ overrun`]},
+
+{id:"a11",
+ t:"adc",
+ q:`ต้องการให้ TIM2 สั่ง ADC1 เริ่มแปลงทุก 1 ms <b>ด้วยฮาร์ดแวร์</b> ข้อใดอธิบายการตั้งค่าถูก`,
+ o:[`TIM2 ส่ง TRGO ทุกครั้งที่ update (MMS = 010) และ ADC เลือก EXTSEL = TIM2_TRGO พร้อม EXTEN = 01 (rising)`,`เปิด TIM2 interrupt แล้วตั้ง SWSTART ใน TIM2_IRQHandler`,`ตั้ง CONT = 1 และ sampling time ให้ได้ 1 ms`,`ตั้ง EXTSEL = TIM2_TRGO แต่ปล่อย EXTEN = 00`],
+ a:0,
+ x:`Hardware trigger ต้องตั้ง 2 ฝั่ง: timer ส่ง <b>TRGO ทุก update</b> และ ADC เลือก<b>แหล่ง trigger (EXTSEL)</b> พร้อม<b>เปิด edge (EXTEN)</b> ADC จะเริ่มแปลงตรงจังหวะ timer โดยไม่ผ่าน CPU`,
+ k:[`timer ส่ง TRGO`,`ADC: EXTSEL = TIM2_TRGO + EXTEN ≠ 00`],
+ w:[null,`ใช้ได้แต่เป็น software trigger ใน ISR มี jitter`,`sampling สูงสุด 480 cycles (~60 µs) ไม่ถึง 1 ms`,`EXTEN = 00 คือปิด external trigger`]},
+
+{id:"a12",
+ t:"adc",
+ q:`สุ่มสัญญาณ sine 3 kHz ด้วย sampling rate 5 kHz ข้อมูลที่ได้จะดูเหมือนสัญญาณความถี่เท่าใด`,
+ o:[`1 kHz`,`2 kHz`,`3 kHz`,`8 kHz`],
+ a:1,
+ keep:true,
+ x:`Nyquist = f<sub>s</sub>/2 = 2.5 kHz สัญญาณ 3 kHz เกิน จึงเกิด <b>aliasing</b> ความถี่ที่เห็น = |f − f<sub>s</sub>| = |3 − 5| = <b>2 kHz</b> ต้องใช้ f<sub>s</sub> > 6 kHz`,
+ k:[`3 kHz > Nyquist 2.5 kHz → aliasing`,`|3 − 5| = 2 kHz`],
+ w:[`ไม่ได้มาจากสูตร alias`,null,`ต้อง f_s > 6 kHz จึงเห็น 3 kHz`,`f + f_s เกิน Nyquist ไม่ปรากฏ`]},
+
+{id:"a13",
+ t:"adc",
+ q:`เปิด SCAN mode แปลง 3 ช่อง (IN0, IN1, IN4) ให้ EOC ขึ้นเมื่อจบลำดับ (EOCS = 0) และไม่ใช้ DMA เมื่อ EOC = 1 แล้วอ่าน ADC1->DR หนึ่งครั้ง จะได้อะไร`,
+ o:[`ค่าทั้ง 3 ช่องรวมกัน`,`ค่าช่องสุดท้าย (IN4) เพราะ DR ถูกเขียนทับทุกการแปลง`,`ค่าช่องแรก (IN0)`,`ค่าเฉลี่ย 3 ช่อง`],
+ a:1,
+ x:`ADC มี <b>DR ตัวเดียว</b> ในโหมด scan แต่ละการแปลงเขียนทับ DR และ EOC ขึ้นตอนจบทั้งลำดับ จึงเหลือแค่ค่าช่องสุดท้าย การอ่านหลายช่องต้องใช้ <b>DMA</b> ย้ายแต่ละค่าลง array`,
+ k:[`DR ตัวเดียว ถูกเขียนทับ`,`หลายช่องต้องใช้ DMA`],
+ w:[`DR เก็บได้ครั้งละค่า`,null,`ค่าแรกถูกเขียนทับแล้ว`,`ไม่มี hardware averaging`]},
+
+{id:"a14",
+ t:"adc",
+ q:`ต้องการวัดสัญญาณ analog ที่อัตรา sampling คงที่ 1 kHz แต่ CPU ต้องส่ง UART และทำงานอื่นพร้อมกัน วิธีใดลด sampling jitter ได้ดีที่สุด`,
+ o:[`for-loop delay ≈1 ms แล้วสั่ง SWSTART และรอ EOC ใน while(1)`,`Timer interrupt ทุก 1 ms แล้วสั่ง SWSTART ใน ISR`,`Timer TRGO เป็น external trigger ของ ADC และใช้ DMA circular เก็บผล`,`Continuous mode แล้วให้ main loop อ่าน DR เมื่อว่าง`],
+ a:2,
+ x:`Jitter คือความไม่สม่ำเสมอของจังหวะเริ่มแปลง <b>TRGO สั่ง ADC โดยตรงด้วยฮาร์ดแวร์</b> จังหวะจึงแม่นตาม clock ของ timer ไม่ขึ้นกับ CPU และ DMA เก็บผลให้โดยไม่ต้องรอ CPU`,
+ k:[`ฮาร์ดแวร์ (TRGO) เป็นตัวกำหนดเวลา ไม่ผ่าน CPU`,`DMA เก็บผล`],
+ w:[`เวลาขึ้นกับงานอื่นในลูป jitter สูงสุด`,`ดีกว่าแต่ยังแกว่งตาม interrupt latency และ ISR อื่น`,null,`อัตราไม่ใช่ 1 kHz และอาจอ่านซ้ำหรือพลาด`]},
+
+{id:"a15",
+ t:"adc",
+ q:`ADC ถูก trigger ที่ 8 kHz ใช้ DMA แบบ circular เติม buffer 256 ค่า และประมวลผลทีละครึ่ง buffer เมื่อเกิด half-transfer และ transfer-complete interrupt เวลาสูงสุดที่ใช้ประมวลผลครึ่ง buffer ได้คือ`,
+ o:[`8 ms`,`16 ms`,`32 ms`,`128 ms`],
+ a:1,
+ keep:true,
+ x:`ครึ่ง buffer = 128 ค่า ที่ 8 kHz ใช้เวลาเติม 128 / 8000 = <b>16 ms</b> ขณะประมวลผลครึ่งหนึ่ง DMA กำลังเติมอีกครึ่ง ถ้าเกิน 16 ms DMA จะวนมาเขียนทับข้อมูลที่ยังทำไม่เสร็จ (ping-pong buffer)`,
+ k:[`ครึ่ง buffer = 128 ค่า`,`128 / 8000 = 16 ms`],
+ w:[`ไม่มีที่มาจากโจทย์`,null,`นั่นคือเวลาเติมทั้ง 256 ค่า`,`เอาจำนวนค่ามาเป็น ms`]},
+
+{id:"a16",
+ t:"adc",
+ q:`ตั้ง ADC 12-bit แบบ <b>left alignment</b> (CR2.ALIGN = 1) แล้วหมุน pot ไปสุด (3.3 V) ค่าที่อ่านจาก ADC1->DR จะเป็นเท่าใด`,
+ o:[`4095 (0x0FFF)`,`65520 (0xFFF0)`,`255 (0x00FF)`,`32767 (0x7FFF)`],
+ a:1,
+ x:`Left alignment วางผล 12 บิตไว้ที่บิต 15:4 ของ DR (เหมือนเลื่อนซ้าย 4 บิต) 0xFFF จึงกลายเป็น <b>0xFFF0 = 65520</b> ถ้าต้องการ 0–4095 ใช้ right alignment (ALIGN = 0) หรือ shift ขวา 4 บิต`,
+ k:[`left align = ข้อมูลอยู่บิต 15:4`,`0xFFF → 0xFFF0`],
+ w:[`นั่นคือ right align`,null,`นั่นคือ 8-bit`,`ไม่ได้มาจากการจัดวางแบบใด`]},
+
+{id:"a17",
+ t:"adc",
+ q:`เปิด EOCIE ให้ ADC เกิด interrupt เมื่อแปลงเสร็จ ข้อใดเหมาะที่สุดสำหรับงานใน <code>ADC_IRQHandler</code>`,
+ o:[`sprintf แล้วส่ง string ทาง UART แบบรอ TXE ทันที`,`อ่าน ADC1->DR เก็บลงตัวแปร volatile ตั้ง flag แล้วออก ให้ main จัดการส่ง UART`,`ใส่ delay 100 ms เพื่อรอให้ค่านิ่ง`,`วน while รอให้ผู้ใช้กดปุ่มก่อนออก`],
+ a:1,
+ x:`ISR ต้อง<b>สั้นและไม่ block</b>: อ่าน DR (ซึ่งล้าง EOC ด้วย) เก็บลงตัวแปร <b>volatile</b> ตั้ง flag แล้วออก งานช้าอย่าง sprintf หรือส่ง UART แบบรอ TXE จะทำให้ interrupt อื่นที่ priority เท่ากันหรือต่ำกว่าต้องรอ`,
+ k:[`ISR สั้น: อ่าน DR + flag`,`งานช้าไป main`],
+ w:[`งานช้าใน ISR บล็อกระบบ`,null,`delay ใน ISR บล็อกทั้งระบบ`,`ห้ามวนรอใน ISR`]},
+
+{id:"a18",
+ t:"adc",
+ q:`ADCCLK = 8 MHz ต้องการแปลงให้เร็วที่สุด เลือก 6-bit และ sampling time 3 cycles การแปลง 1 ครั้งใช้เวลาเท่าใด`,
+ o:[`0.375 µs`,`1.125 µs`,`1.875 µs`,`2 µs`],
+ a:1,
+ keep:true,
+ x:`เวลา = sampling + cycles ของความละเอียด = 3 + 6 = <b>9 cycles</b> ÷ 8 MHz = <b>1.125 µs</b> (12-bit กับ 3 cycles จะเป็น 15 cycles = 1.875 µs)`,
+ k:[`6-bit ใช้ 6 cycles`,`(3 + 6) / 8 MHz = 1.125 µs`],
+ w:[`นับแค่ sampling 3 cycles`,null,`นั่นคือของ 12-bit`,`ไม่ได้มาจากสูตร`]},
+
+{id:"a19",
+ t:"adc",
+ q:`ค่า ADC จาก pot แกว่งแบบสุ่ม ถ้าเฉลี่ยผลการวัด 16 ครั้ง สัญญาณรบกวนแบบสุ่มจะลดลงประมาณกี่เท่า`,
+ o:[`ไม่ลดลง`,`2 เท่า`,`4 เท่า`,`16 เท่า`],
+ a:2,
+ keep:true,
+ x:`noise แบบสุ่มที่ไม่สัมพันธ์กัน เมื่อเฉลี่ย N ค่าจะลดลง <b>√N</b> เท่า √16 = <b>4 เท่า</b> แลกกับอัตราข้อมูลที่ช้าลง 16 เท่า`,
+ k:[`ค่าเฉลี่ยลด noise สุ่ม √N เท่า`,`√16 = 4`],
+ w:[`การเฉลี่ยลด noise สุ่มได้`,`นั่นคือ √4`,null,`เข้าใจผิดว่าลด N เท่า`]},
+
+{id:"a20",
+ t:"adc",
+ q:`Potentiometer ต่อระหว่าง 3.3 V กับ GND โดยตัวกลางเข้า PA0 และ V<sub>REF+</sub> ต่อกับไฟเลี้ยงเดียวกัน ถ้าไฟเลี้ยงตกจาก 3.3 V เหลือ 3.0 V ขณะที่ pot อยู่ตรงกลาง ค่าที่อ่านได้จะเป็นอย่างไร`,
+ o:[`ยังประมาณ 2048 เพราะทั้งแรงดัน pot และ V_REF ลดลงในสัดส่วนเดียวกัน (ratiometric)`,`ลดลงเหลือประมาณ 1860`,`เพิ่มขึ้นเป็นประมาณ 2250`,`อ่านไม่ได้เพราะต่ำกว่า 3.3 V`],
+ a:0,
+ x:`แรงดันที่ PA0 = ครึ่งหนึ่งของไฟเลี้ยง และ raw = V<sub>in</sub> / V<sub>REF</sub> × 4095 เมื่อทั้งสองมาจากไฟเลี้ยงเดียวกัน ตัวแปรไฟเลี้ยงหักล้างกัน raw = (V/2)/V × 4095 ≈ <b>2048</b> เสมอ นี่คือการวัดแบบ <b>ratiometric</b>`,
+ k:[`V_in และ V_REF แปรตามไฟเลี้ยงเดียวกัน`,`สัดส่วนคงที่ → raw ≈ 2048`],
+ w:[null,`คิดว่า V_REF คงที่ 3.3 V ซึ่งไม่จริงในวงจรนี้`,`ทิศทางผิด และ V_REF ก็ลดลงด้วย`,`ADC ทำงานได้ที่ไฟเลี้ยง 3.0 V`]},
+
+{id:"i1",
+ t:"int",
+ q:`ต้องการให้กดปุ่ม PC13 (active low) แล้วเกิด interrupt ข้อใดเป็นขั้นตอนที่ครบ`,
+ o:[`เปิด clock SYSCFG → EXTICR เลือกพอร์ต C ให้ line 13 → IMR บิต 13 = 1 → FTSR บิต 13 = 1 → NVIC_EnableIRQ(EXTI15_10_IRQn)`,`IMR บิต 13 = 1 และ RTSR บิต 13 = 1 ก็พอ`,`ตั้ง PC13 เป็น AF แล้วเลือก AF ที่เป็น EXTI`,`NVIC_EnableIRQ(EXTI15_10_IRQn) อย่างเดียว`],
+ a:0,
+ x:`(1) line 13 รับได้จาก PA13, PB13, PC13… ต้อง<b>เลือกพอร์ต C ใน SYSCFG_EXTICR</b> (ต้องเปิด clock SYSCFG) (2) <b>unmask</b> ใน IMR (3) active low กดแล้ว 1 → 0 ใช้ <b>falling edge</b> (FTSR) (4) เปิด <b>EXTI15_10_IRQn</b> ใน NVIC เพราะ line 10–15 ใช้ vector ร่วมกัน`,
+ k:[`EXTICR เลือกพอร์ต C`,`IMR + FTSR (falling เพราะ active low)`,`NVIC EXTI15_10_IRQn`],
+ w:[null,`ค่า reset ของ EXTICR คือพอร์ต A และ rising จะทำงานตอนปล่อย`,`EXTI ไม่ได้เลือกผ่าน AFR`,`ยังไม่ได้บอกพอร์ต ขอบ และยัง mask อยู่`]},
+
+{id:"i2",
+ t:"int",
+ q:`มีปุ่ม 2 ปุ่มที่ PC13 และ PB10 ใช้ EXTI ทั้งคู่ ข้อใดถูก`,
+ o:[`มี ISR แยกชื่อ EXTI13_IRQHandler และ EXTI10_IRQHandler`,`ใช้ EXTI15_10_IRQHandler ร่วมกัน ใน ISR ต้องเช็ค EXTI->PR ว่าบิต 10 หรือ 13 เป็น 1 แล้วล้างเฉพาะบิตนั้น`,`ใช้ EXTI15_10_IRQHandler ร่วมกัน และเขียน EXTI->PR = 0xFFFF ทุกครั้งเพื่อล้างทุกบิต`,`ใช้พร้อมกันไม่ได้เพราะอยู่ต่างพอร์ต`],
+ a:1,
+ x:`EXTI0–4 มี vector ของตัวเอง แต่ line 5–9 ใช้ EXTI9_5 ร่วมกัน และ <b>line 10–15 ใช้ EXTI15_10 ร่วมกัน</b> ISR จึงต้อง<b>เช็ค PR</b> เพื่อรู้ว่าปุ่มไหนกด และล้างเฉพาะบิตที่จัดการแล้ว`,
+ k:[`line 10–15 ใช้ vector EXTI15_10 ร่วม`,`เช็ค PR แยกปุ่ม ล้างเฉพาะบิตนั้น`],
+ w:[`ไม่มี vector แยกของ line 10–15`,null,`ล้างทุกบิตอาจทำให้พลาดอีกปุ่ม`,`คนละ line (10 กับ 13) จึงใช้พร้อมกันได้`]},
+
+{id:"i3",
+ t:"int",
+ q:`เขียน EXTI15_10_IRQHandler เองแต่ลืม <code>EXTI->PR = EXTI_PR_PR13;</code> จะเกิดอะไรขึ้น`,
+ o:[`ISR ทำงานครั้งเดียว`,`ISR ถูกเรียกซ้ำทันทีที่ return วนไม่รู้จบ main แทบไม่ได้ทำงาน`,`ไม่มีผล NVIC ล้างให้`,`HardFault`],
+ a:1,
+ x:`PR เป็นบิตแบบ <b>ล้างโดยเขียน 1</b> ตราบใดที่ยังเป็น 1 request ไป NVIC ยังค้าง พอ ISR return CPU เห็นว่ายัง pending ก็เข้าซ้ำทันที (tail-chain) โปรแกรมดูเหมือนค้าง`,
+ k:[`PR ค้าง = request ค้าง`,`ISR วนซ้ำไม่จบ`],
+ w:[`จะเป็นแบบนั้นถ้าล้าง PR`,null,`NVIC ล้างของตัวเอง แต่ EXTI->PR ยังตั้ง pending ใหม่`,`ไม่ใช่ fault`]},
+
+{id:"i4",
+ t:"int",
+ q:`ถ้าตั้งค่า EXTI ให้ PC13 เอง ต้องเขียน SYSCFG อย่างไร และ ISR ชื่ออะไร`,
+ o:[`SYSCFG->EXTICR[3] บิต 7:4 = 0010, EXTI15_10_IRQHandler`,`SYSCFG->EXTICR[3] บิต 7:4 = 0010, EXTI13_IRQHandler`,`SYSCFG->EXTICR[1] บิต 3:0 = 0010, EXTI15_10_IRQHandler`,`SYSCFG->EXTICR[3] บิต 7:4 = 0011, EXTI15_10_IRQHandler`],
+ a:0,
+ x:`Line 13 อยู่ใน EXTICR4 = <b>index [3]</b> (line 12–15) เป็นฟิลด์ที่ 13 mod 4 = 1 คือ<b>บิต 7:4</b> รหัสพอร์ต C = <b>0010</b> และ line 10–15 ใช้ <b>EXTI15_10_IRQHandler</b> ร่วมกัน (ต้องเปิด clock SYSCFG ก่อน)`,
+ k:[`EXTICR[3] บิต 7:4 = 0010 (พอร์ต C)`,`ISR ร่วม EXTI15_10`],
+ w:[null,`ไม่มี vector EXTI13 แยก`,`EXTICR[1] คือ line 4–7`,`0011 คือพอร์ต D`]},
+
+{id:"i5",
+ t:"int",
+ q:`ต้องการเพิ่มปุ่มที่ PB13 เป็น EXTI <b>พร้อมกับ</b> PC13 ข้อใดถูก`,
+ o:[`ได้ ตั้งทั้งสองขาเป็น input + falling edge interrupt`,`ได้ ถ้าขาหนึ่ง rising อีกขา falling`,`ไม่ได้ เพราะ EXTI line 13 เลือกได้พอร์ตเดียว ต้องย้ายปุ่มไปขาเลขอื่น`,`ไม่ได้ เพราะพอร์ต B ใช้ EXTI ไม่ได้`],
+ a:2,
+ x:`EXTI line n รับจากขาเลข n ของ<b>พอร์ตเดียว</b> (เลือกใน SYSCFG_EXTICR ฟิลด์ 4 บิตเดียว) PB13 กับ PC13 อยู่ line 13 เหมือนกัน การ init ขาหลังจะเขียนทับขาแรก จึงต้องเลือกขาที่เลขไม่ชน`,
+ k:[`1 line เลือกได้ 1 พอร์ต`,`PB13 กับ PC13 ชน line 13`],
+ w:[`ตัวที่ init ทีหลังจะทับตัวแรก`,`edge ตั้งต่อ line ไม่ใช่ต่อขา`,null,`ทุกพอร์ตใช้ EXTI ได้`]},
+
+{id:"i6",
+ t:"int",
+ q:`คอมไพล์ด้วย optimization (-O2) แล้วกดปุ่ม แต่ LED ไม่ติด สาเหตุที่เป็นไปได้มากที่สุดคือ`,
+ code:`uint8_t g_btn = 0;
+
+void EXTI15_10_IRQHandler(void){
+    if (EXTI->PR & EXTI_PR_PR13){
+        EXTI->PR = EXTI_PR_PR13;
+        g_btn = 1;
+    }
+}
+
+int main(void){
+    /* ...setup... */
+    while (g_btn == 0) { }
+    GPIOA->ODR |= GPIO_ODR_OD5;
+}`,
+ o:[`ลืมประกาศ g_btn เป็น volatile คอมไพเลอร์อ่านค่าครั้งเดียวแล้ววนค้าง`,`ล้าง PR ก่อนตั้ง flag ทำให้ flag หาย`,`ต้องใช้ uint32_t`,`ห้ามแก้ ODR หลัง interrupt`],
+ a:0,
+ x:`คอมไพเลอร์ไม่รู้ว่า ISR จะเปลี่ยน g_btn จึงอาจโหลดค่าเข้า register ครั้งเดียวแล้ววนตลอดไป ตัวแปรที่ใช้ร่วมระหว่าง ISR กับ main ต้องประกาศ <b>volatile</b> เพื่อบังคับให้อ่านจากหน่วยความจำทุกครั้ง`,
+ k:[`ตัวแปรร่วม ISR–main ต้อง volatile`,`optimizer อ่านครั้งเดียวแล้ววนค้าง`],
+ w:[null,`ลำดับนี้ถูกต้อง`,`ขนาดตัวแปรไม่ใช่สาเหตุ`,`แก้ ODR ได้ปกติ`]},
+
+{id:"i7",
+ t:"int",
+ q:`ตั้ง preempt priority: EXTI15_10 = 1, TIM2 = 2, USART2 = 3 (เลขน้อย = สำคัญกว่า) ขณะทำ USART2 ISR มีการกดปุ่ม และระหว่างทำ EXTI ISR TIM2 เกิด update ลำดับการทำงานคือ`,
+ o:[`USART2 จบ → EXTI → TIM2`,`EXTI ขัด USART2 → EXTI จบ → TIM2 → กลับไปทำ USART2 ต่อ`,`EXTI ขัด USART2 → TIM2 ขัด EXTI`,`ทั้งสามทำพร้อมกัน`],
+ a:1,
+ x:`Preemption เกิดเมื่อ priority ใหม่<b>สูงกว่า</b> (เลขน้อยกว่า) ตัวที่ทำอยู่: EXTI (1) ขัด USART2 (3) ได้ ส่วน TIM2 (2) ต่ำกว่า EXTI จึงรอจน EXTI จบ แต่สูงกว่า USART2 ที่ค้างอยู่ จึงได้ทำก่อน (tail-chaining) แล้วค่อยกลับไปทำ USART2`,
+ k:[`เลขน้อยกว่าขัดได้`,`TIM2 รอ EXTI จบ แต่ได้ก่อน USART2`],
+ w:[`EXTI สูงกว่าจึงขัดได้เลย`,null,`TIM2 ต่ำกว่า EXTI ขัดไม่ได้`,`CPU ทำได้ทีละ ISR`]},
+
+{id:"i8",
+ t:"int",
+ q:`ปุ่มเด้ง (bounce) ทำให้ EXTI ISR ถูกเรียกหลายครั้งต่อการกดหนึ่งครั้ง วิธีใดเหมาะที่สุด`,
+ o:[`ใส่ for-loop delay 50 ms ใน ISR`,`ใน ISR อ่านเวลาปัจจุบัน (ms) จาก timer ถ้าห่างจากครั้งก่อนน้อยกว่า ~50 ms ให้ข้าม ไม่เช่นนั้นตั้ง flag และจำเวลา`,`เปลี่ยนเป็น rising edge`,`ตั้ง priority สูงสุด`],
+ a:1,
+ x:`Debounce ด้วย<b>เวลา</b>: ISR ยังสั้นและไม่ block ส่วน edge ที่ตามมาในช่วงเด้งจะถูกทิ้ง การใส่ delay ใน ISR ทำให้ทั้งระบบหยุดรอ`,
+ k:[`ใช้ timestamp ทิ้ง edge ที่ถี่เกิน`,`ไม่ใช้ delay ใน ISR`],
+ w:[`delay ใน ISR บล็อกทั้งระบบ`,null,`ขอบขาขึ้นก็เด้ง`,`priority ไม่ลดจำนวน edge`]},
+
+{id:"i9",
+ t:"int",
+ q:`ฟังก์ชัน <code>delay_ms()</code> วนรอให้ตัวแปร tick เพิ่ม ซึ่ง tick ถูกเพิ่มใน SysTick interrupt (priority 15) ถ้าเรียก <code>delay_ms(100)</code> ใน EXTI15_10_IRQHandler ที่ตั้ง priority 0 จะเกิดอะไรขึ้น (HAL_Delay ทำงานแบบเดียวกันนี้)`,
+ o:[`หน่วง 100 ms แล้วทำงานต่อปกติ`,`ค้างไม่ออกจาก ISR เพราะ SysTick ซึ่ง priority ต่ำกว่าขัด EXTI ไม่ได้ tick จึงไม่เพิ่ม`,`หน่วงแค่ 1 ms`,`delay ถูกข้ามอัตโนมัติ`],
+ a:1,
+ x:`delay วนรอให้ <b>tick เพิ่ม</b> ซึ่งเพิ่มใน <b>SysTick interrupt</b> แต่ขณะอยู่ใน EXTI ISR (priority 0) SysTick (15) มี priority ต่ำกว่าจึง<b>ขัดไม่ได้</b> tick ไม่เพิ่ม ลูปไม่จบ ระบบค้าง`,
+ k:[`delay พึ่ง SysTick interrupt`,`SysTick ต่ำกว่า ขัด EXTI ไม่ได้ → ค้าง`],
+ w:[`tick ไม่เพิ่มขณะอยู่ใน ISR ที่สูงกว่า`,null,`ไม่มีกลไกนี้`,`ไม่มีการข้าม delay`]},
+
+{id:"i10",
+ t:"int",
+ q:`เปิดทั้ง RXNEIE และ TXEIE ของ USART2 ใน <code>USART2_IRQHandler</code> ควรเขียนอย่างไร`,
+ o:[`อ่าน DR ทุกครั้งที่เข้า ISR เพราะ USART2 มีแค่เหตุการณ์รับ`,`เช็ค SR: ถ้า RXNE = 1 อ่าน DR, ถ้า TXE = 1 และ TXEIE เปิด เขียนไบต์ถัดไป เพราะหลายเหตุการณ์ใช้ vector เดียวกัน`,`แยกเป็น USART2_RX_IRQHandler กับ USART2_TX_IRQHandler`,`ไม่ต้องเช็ค เพราะเข้า ISR ได้ทีละเหตุการณ์`],
+ a:1,
+ x:`USART2 มี<b>interrupt vector เดียว</b> ที่ใช้ร่วมกันทั้ง RXNE, TXE, TC, IDLE และ error ใน ISR จึงต้อง<b>อ่าน SR เพื่อดูว่าเกิดจากอะไร</b> แล้วจัดการและล้าง flag ให้ถูกตัว`,
+ k:[`USART2 มี vector เดียวใช้ร่วม`,`เช็ค SR (RXNE / TXE) ก่อนจัดการ`],
+ w:[`ถ้าเข้าเพราะ TXE แล้วอ่าน DR จะไม่ได้ส่งข้อมูล`,null,`ไม่มี vector แยก`,`หลาย flag อาจเป็น 1 พร้อมกันได้`]},
+
+{id:"i11",
+ t:"int",
+ q:`ตั้ง EXTI ครบ (SYSCFG, IMR, FTSR) และเขียน EXTI15_10_IRQHandler ถูกต้อง แต่ลืมเรียก <code>NVIC_EnableIRQ(EXTI15_10_IRQn)</code> กดปุ่มแล้วเป็นอย่างไร`,
+ o:[`ISR ทำงานปกติ`,`ISR ไม่ถูกเรียกเลย แม้ EXTI จะจับขอบได้`,`ISR ทำงานช้าลง`,`HardFault`],
+ a:1,
+ x:`Interrupt ต้องผ่าน 3 ด่าน: (1) peripheral เปิด interrupt (EXTI IMR) (2) <b>NVIC เปิด IRQ นั้น</b> (3) interrupt รวมไม่ถูกปิด ขาดด่านที่ 2 request ไปไม่ถึง CPU ISR จึงไม่ทำงาน`,
+ k:[`ต้องผ่าน peripheral + NVIC + global enable`,`ไม่ enable NVIC → ไม่เข้า ISR`],
+ w:[`ทุก IRQ ต้องผ่าน NVIC`,null,`ไม่ใช่เรื่องความเร็ว`,`ไม่มี exception เกิด`]},
+
+{id:"i12",
+ t:"int",
+ q:`ระบบต้องอ่าน ADC เป็นระยะ ส่งผลทาง UART และใช้ปุ่ม PC13 สลับ interval ระหว่าง 200 ms กับ 1000 ms โดยไม่ให้การรับปุ่มล่าช้าจากการส่ง UART จำนวนมาก สถาปัตยกรรมใดเหมาะที่สุด`,
+ o:[`while(1): อ่าน ADC → ส่ง UART แบบรอ TXE → อ่านปุ่ม → delay 200 หรือ 1000 ms`,`Timer ISR อ่าน ADC แล้ว sprintf และส่ง UART ทั้งข้อความใน ISR โดย EXTI priority เท่ากับ Timer`,`Timer กำหนดจังหวะ (ISR สั้น ตั้ง flag), EXTI ISR แค่สลับค่า interval, main ส่ง UART แบบ interrupt/DMA และให้ EXTI priority สูงกว่า`,`EXTI ISR อ่าน ADC และส่ง UART เอง main ว่าง`],
+ a:2,
+ x:`หลักคือ (1) <b>เวลาจากฮาร์ดแวร์</b> (timer) ไม่ใช่ delay (2) <b>ISR สั้น</b> งานหนักอย่าง sprintf/UART ไป main หรือ DMA (3) งานที่ต้องตอบเร็ว (ปุ่ม) ได้ <b>priority สูงกว่า</b> ตัวเลือกนี้ทำครบ ปุ่มเปลี่ยน interval ได้ทันทีและ UART ไม่บล็อกใคร`,
+ k:[`timer คุมเวลา`,`ISR สั้น งานหนักไป main/DMA`,`EXTI priority สูงกว่า`],
+ w:[`ปุ่มต้องรอ UART + delay latency ≈ 1 s`,`ISR ยาว ปุ่มที่ priority เท่ากันขัดไม่ได้`,null,`อ่าน ADC เฉพาะตอนกดปุ่ม ไม่ใช่เป็นระยะ`]},
+
+{id:"i13",
+ t:"int",
+ q:`บางครั้งจำนวนการกดหายไปจากการนับ สาเหตุและวิธีแก้คืออะไร`,
+ code:`volatile uint32_t g_count = 0;
+
+void EXTI15_10_IRQHandler(void){
+    EXTI->PR = EXTI_PR_PR13;
+    g_count++;
+}
+
+int main(void){
+    while(1){
+        if (g_count >= 10){
+            g_count = g_count - 10;
+            GPIOA->ODR ^= GPIO_ODR_OD5;
+        }
+    }
+}`,
+ o:[`volatile ทำให้ช้า ต้องเอาออก`,`g_count = g_count − 10 เป็น read-modify-write ถ้า interrupt แทรกระหว่างอ่านกับเขียน ค่าที่ ISR เพิ่มจะถูกเขียนทับ ต้องครอบด้วย __disable_irq() / __enable_irq()`,`ต้องใช้ uint8_t`,`ต้องย้ายการล้าง PR ไปไว้ท้าย ISR`],
+ a:1,
+ x:`main อ่าน g_count (เช่น 12) แล้วลบ 10 ถ้า ISR มาเพิ่มเป็น 13 ก่อน main เขียนกลับ ค่าที่เขียนคือ 2 แทน 3 การกดหายไป 1 ครั้ง <b>volatile ไม่ได้ทำให้ read-modify-write เป็น atomic</b> ต้องทำ <b>critical section</b> สั้นๆ`,
+ k:[`RMW ไม่ atomic ถูก ISR แทรกได้`,`critical section (__disable_irq)`],
+ w:[`volatile จำเป็น`,null,`ขนาดไม่ช่วย RMW`,`ล้างต้น ISR ถูกแล้ว ไม่เกี่ยวกับการนับหาย`]},
+
+{id:"i14",
+ t:"int",
+ q:`เมื่อเกิด interrupt ขณะ CPU ทำงานใน main ข้อใดอธิบายลำดับเหตุการณ์ได้ถูกต้อง`,
+ o:[`CPU ทิ้งคำสั่งที่ทำอยู่ทันทีแล้วเริ่ม main ใหม่หลัง ISR จบ`,`CPU ทำคำสั่งปัจจุบันให้จบ บันทึก register (R0–R3, R12, LR, PC, xPSR) ลง stack อัตโนมัติ อ่าน address ของ ISR จาก vector table แล้วทำ ISR เมื่อจบจึงคืนค่าและกลับไปทำ main ต่อจากจุดเดิม`,`CPU รอจน main วนครบรอบแล้วค่อยเรียก ISR`,`ISR ทำงานพร้อมกับ main บน core เดียวกัน`],
+ a:1,
+ x:`Cortex-M4 จะ<b>ทำคำสั่งปัจจุบันให้จบ</b> แล้ว <b>stacking</b> register สำคัญลง stack อัตโนมัติ (เพื่อกลับมาทำต่อได้) อ่าน <b>vector table</b> เพื่อหา address ของ ISR ทำ ISR และเมื่อ return จะ<b>คืนค่า register</b> แล้วทำ main ต่อจากจุดที่ถูกขัด ต่างจาก polling ที่ CPU ต้องวนเช็คเอง`,
+ k:[`stacking register อัตโนมัติ`,`vector table → ISR → คืนค่ากลับจุดเดิม`],
+ w:[`main ไม่ได้เริ่มใหม่ แต่ทำต่อจากจุดเดิม`,null,`interrupt ตอบสนองทันที ไม่รอรอบลูป`,`core เดียวทำได้ทีละอย่าง`]},
+
+{id:"i15",
+ t:"int",
+ q:`ระบบ interrupt-driven ที่ไม่มีงานเมื่อไม่มี event ควรเขียน while(1) แบบใดเพื่อประหยัดพลังงาน`,
+ o:[`while(1){} วนเปล่า`,`while(1){ if(flag){ … } __WFI(); } ให้ CPU sleep จนมี interrupt มาปลุก`,`ใส่ HAL_Delay(1000) ในลูป`,`ปิด clock ของทุก peripheral`],
+ a:1,
+ x:`สไลด์ Blocking function ระบุว่า busy-wait กินพลังงานสูงสุด <b>__WFI()</b> (Wait For Interrupt) หยุด clock ของ core จน interrupt มาปลุก ขณะที่ timer, ADC, DMA, UART ยังทำงาน (ใน HAL SysTick จะปลุกทุก 1 ms ถ้าไม่ได้ HAL_SuspendTick)`,
+ k:[`busy-wait กินไฟ`,`__WFI sleep จน interrupt ปลุก`],
+ w:[`CPU ทำงานเต็มที่ตลอด`,null,`HAL_Delay ก็คือ busy-wait`,`peripheral ที่ต้องใช้จะหยุด`]}
+];
+</script>
+<script>
+(function(){
+  "use strict";
+  const TOPIC = {
+    gpio:{no:1,name:"GPIO",c:"var(--gpio)"}, uart:{no:2,name:"UART",c:"var(--uart)"},
+    adc:{no:3,name:"ADC",c:"var(--adc)"}, int:{no:4,name:"Interrupt",c:"var(--int)"}
+  };
+  const LETTERS = ["ก","ข","ค","ง"];
+  const KEY = "en813202-mock-v3";
+  const $ = (s, r=document) => r.querySelector(s);
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  /* ---------- register strips ---------- */
+  const REGS = {
+    moder:{name:"GPIOx_MODER", note:"offset 0x00 · 2 บิตต่อขา", width:32, minw:880,
+      fields:Array.from({length:16},(_,i)=>{const y=15-i;return {hi:2*y+1,lo:2*y,n:"MODER"+y,hl:y===5};})},
+    cr1:{name:"USART_CR1 [15:0]", note:"offset 0x0C · บิต 31:16 reserved", width:16, hi:15, minw:720,
+      fields:[{hi:15,lo:15,n:"OVER8"},{hi:13,lo:13,n:"UE",hl:1},{hi:12,lo:12,n:"M",hl:1},{hi:11,lo:11,n:"WAKE"},{hi:10,lo:10,n:"PCE"},
+        {hi:9,lo:9,n:"PS"},{hi:8,lo:8,n:"PEIE"},{hi:7,lo:7,n:"TXEIE"},{hi:6,lo:6,n:"TCIE"},{hi:5,lo:5,n:"RXNEIE"},{hi:4,lo:4,n:"IDLEIE"},
+        {hi:3,lo:3,n:"TE",hl:1},{hi:2,lo:2,n:"RE",hl:1},{hi:1,lo:1,n:"RWU"},{hi:0,lo:0,n:"SBK"}]},
+    sr:{name:"USART_SR [15:0]", note:"offset 0x00 · flag ที่ต้องรู้", width:16, hi:15, minw:640,
+      fields:[{hi:9,lo:9,n:"CTS"},{hi:8,lo:8,n:"LBD"},{hi:7,lo:7,n:"TXE",hl:1},{hi:6,lo:6,n:"TC",hl:1},{hi:5,lo:5,n:"RXNE",hl:1},
+        {hi:4,lo:4,n:"IDLE"},{hi:3,lo:3,n:"ORE",hl:1},{hi:2,lo:2,n:"NF"},{hi:1,lo:1,n:"FE"},{hi:0,lo:0,n:"PE"}]},
+    cr2:{name:"ADC_CR2", note:"offset 0x08", width:32, minw:1000,
+      fields:[{hi:30,lo:30,n:"SWSTART",hl:1},{hi:29,lo:28,n:"EXTEN",hl:1},{hi:27,lo:24,n:"EXTSEL[3:0]",hl:1},{hi:22,lo:22,n:"JSWSTART"},
+        {hi:21,lo:20,n:"JEXTEN"},{hi:19,lo:16,n:"JEXTSEL"},{hi:11,lo:11,n:"ALIGN"},{hi:10,lo:10,n:"EOCS",hl:1},{hi:9,lo:9,n:"DDS",hl:1},
+        {hi:8,lo:8,n:"DMA",hl:1},{hi:1,lo:1,n:"CONT",hl:1},{hi:0,lo:0,n:"ADON",hl:1}]},
+    exticr4:{name:"SYSCFG_EXTICR4 = EXTICR[3] [15:0]", note:"เลือกพอร์ตของ line 12–15", width:16, hi:15, minw:480,
+      fields:[{hi:15,lo:12,n:"EXTI15[3:0]"},{hi:11,lo:8,n:"EXTI14[3:0]"},{hi:7,lo:4,n:"EXTI13 = 0010 (PC)",hl:1},{hi:3,lo:0,n:"EXTI12[3:0]"}]}
+  };
+  function renderReg(el, spec){
+    const top = spec.hi ?? (spec.width-1);
+    const cells = [];
+    const byHi = {}; spec.fields.forEach(f=>byHi[f.hi]=f);
+    let b = top; const segs = [];
+    while (b >= top-spec.width+1){
+      if (byHi[b]){ segs.push(byHi[b]); b = byHi[b].lo-1; }
+      else { let lo=b; while(lo-1 >= top-spec.width+1 && !byHi[lo-1]) lo--; segs.push({hi:b,lo:lo,n:"",rsv:true}); b = lo-1; }
+    }
+    let html = `<div class="rname">${esc(spec.name)} <span>${esc(spec.note||"")}</span></div><div class="grid" style="grid-template-columns:repeat(${spec.width},minmax(0,1fr));--minw:${spec.minw}px">`;
+    for (let i=top;i>top-spec.width;i--) html += `<div class="bit">${i}</div>`;
+    segs.forEach(s=>{ const span=s.hi-s.lo+1;
+      html += `<div class="fld${s.rsv?" rsv":""}${s.hl?" hl":""}" style="grid-column:span ${span}" title="${esc(s.n||"reserved")} [${s.hi}${s.hi!==s.lo?":"+s.lo:""}]">${esc(s.n||"res.")}</div>`; });
+    el.innerHTML = html + "</div>";
+  }
+  document.querySelectorAll(".reg[data-reg]").forEach(el=>{ const s=REGS[el.dataset.reg]; if(s) renderReg(el,s); });
+
+  /* ---------- UART waveform: 'A' 8O1 ---------- */
+  (function(){
+    const host = $("#wave"); if(!host) return;
+    const seq = [{v:1,l:"idle"},{v:0,l:"Start"},
+      ...[1,0,0,0,0,0,1,0].map((v,i)=>({v,l:"D"+i})),{v:1,l:"P"},{v:1,l:"Stop"},{v:1,l:"idle"}];
+    const U=56, X0=20, HI=46, LO=96, W=X0*2+U*seq.length;
+    let d=`M${X0} ${seq[0].v?HI:LO}`, x=X0, prev=seq[0].v, marks="", labels="";
+    seq.forEach((s,i)=>{
+      const y=s.v?HI:LO; if(s.v!==prev) d+=` L${x} ${y}`;
+      d+=` L${x+U} ${y}`; prev=s.v;
+      const isFrame = i>0 && i<seq.length-1;
+      if(isFrame) marks += `<rect x="${x}" y="${HI-10}" width="${U}" height="${LO-HI+20}" fill="${i>=2&&i<=9?"var(--sunk)":"transparent"}" stroke="var(--line)" stroke-dasharray="3 3"/>`;
+      labels += `<text x="${x+U/2}" y="${LO+24}" text-anchor="middle" font-size="12" fill="var(--muted)">${s.l}</text>`;
+      if(isFrame) labels += `<text x="${x+U/2}" y="${HI-16}" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">${s.v}</text>`;
+      x+=U;
+    });
+    const fx0=X0+U, fx1=X0+U*12;
+    const svg = `<svg viewBox="0 0 ${W} 170" role="img" aria-label="สัญญาณ UART ของตัวอักษร A แบบ 8 data, odd parity, 1 stop">
+      ${marks}
+      <path d="${d}" fill="none" stroke="var(--uart)" stroke-width="3" stroke-linejoin="round"/>
+      ${labels}
+      <line x1="${fx0}" y1="150" x2="${fx1}" y2="150" stroke="var(--muted)" marker-start="url(#ar)" marker-end="url(#ar)"/>
+      <text x="${(fx0+fx1)/2}" y="164" text-anchor="middle" font-size="12" fill="var(--ink)">1 frame = 11 บิต × 104.17 µs = 1.146 ms</text>
+      <text x="${X0+U*2+U*4}" y="${HI-30}" text-anchor="middle" font-size="12" fill="var(--muted)">data ส่ง LSB first (0x41)</text>
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="var(--muted)"/></marker></defs>
+    </svg>`;
+    host.innerHTML = svg;
+  })();
+
+  /* ---------- quiz ---------- */
+  function rng(seedStr){ let h=1779033703^seedStr.length; for(let i=0;i<seedStr.length;i++){h=Math.imul(h^seedStr.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+    return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); h^=h>>>16; return (h>>>0)/4294967296; }; }
+  QUESTIONS.forEach((q,i)=>{
+    q.no = i+1;
+    q.order = q.o.map((_,k)=>k);
+    if(!q.keep){ const r=rng("en813202"+q.id); for(let k=q.order.length-1;k>0;k--){const j=Math.floor(r()*(k+1)); [q.order[k],q.order[j]]=[q.order[j],q.order[k]];} }
+  });
+
+  let state = {ans:{}, mode:"exam", filter:"all"};
+  try { const s = JSON.parse(localStorage.getItem(KEY)||"null"); if(s && typeof s==="object" && s.ans) state = Object.assign(state,s); } catch(e){}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} };
+  const st = q => state.ans[q.id] || (state.ans[q.id] = {c:null, r:"", s:false, g:null});
+
+  /* points: null = ยังไม่ส่ง, "w" = รอให้คะแนน, 0 หรือ 2 */
+  function points(q){
+    const a = state.ans[q.id];
+    if(!a || !a.s) return null;
+    if(a.c !== q.a) return 0;
+    if(!a.r.trim()) return 0;
+    if(a.g === true) return 2;
+    if(a.g === false) return 0;
+    return "w";
+  }
+
+  const list = $("#qlist");
+  function renderQ(q){
+    const t = TOPIC[q.t];
+    const art = document.createElement("article");
+    art.className="q"; art.id="q-"+q.id; art.style.setProperty("--c",t.c);
+    art.innerHTML = `<div class="qh"><span class="qn">ข้อ ${q.no}</span><span class="qt">${t.name}</span><span class="pts" hidden></span></div>
+      <div class="prompt">${q.q}</div>
+      ${q.code?`<pre>${esc(q.code)}</pre>`:""}
+      <div class="opts">${q.order.map((oi,pos)=>`<button class="opt" data-i="${oi}"><span class="L">${LETTERS[pos]}</span><span>${q.o[oi]}${q.w[oi]?`<span class="why-no">ผิดเพราะ: ${q.w[oi]}</span>`:""}</span></button>`).join("")}</div>
+      <div class="reason">
+        <label for="r-${q.id}">เหตุผล (เขียนเหมือนในกระดาษคำตอบ)</label>
+        <textarea id="r-${q.id}" placeholder="ตอบ … เพราะ …"></textarea>
+      </div>
+      <div class="qfoot ask"><button class="btn submit">ส่งคำตอบข้อนี้</button></div>
+      <div class="ans" hidden>
+        <div class="verdict"></div>
+        <div class="written"><span class="label">เหตุผลที่ควรเขียน</span><p>${q.x}</p></div>
+        <div><span class="label">ประเด็นที่ผู้ตรวจมองหา</span><ul class="keys">${q.k.map(k=>`<li>${k}</li>`).join("")}</ul></div>
+        <div class="minewrap"><span class="label">เหตุผลของคุณ</span><div class="mine"></div></div>
+        <div class="grade"></div>
+        <div class="qfoot done"><button class="btn retry">ทำข้อนี้ใหม่</button></div>
+      </div>`;
+    const ta = art.querySelector("textarea");
+    let timer=null;
+    ta.addEventListener("input",()=>{ st(q).r = ta.value; clearTimeout(timer); timer=setTimeout(()=>{ save(); paintQ(q); },250); });
+    art.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>{
+      const a = st(q); if(state.mode!=="exam" || a.s) return;
+      a.c = +b.dataset.i; save(); paintQ(q);
+    }));
+    art.querySelector(".submit").addEventListener("click",()=>{
+      const a = st(q); if(a.c===null) return;
+      a.r = ta.value; a.s = true; a.g = null; save(); paintQ(q); paintScore();
+    });
+    art.querySelector(".grade").addEventListener("click",e=>{
+      const b=e.target.closest("button"); if(!b) return;
+      st(q).g = b.dataset.g==="1"; save(); paintQ(q); paintScore();
+    });
+    art.querySelector(".retry").addEventListener("click",()=>{
+      delete state.ans[q.id]; save(); ta.value=""; paintQ(q); paintScore(); art.querySelector(".opt").focus();
+    });
+    return art;
+  }
+
+  function paintQ(q){
+    const art = document.getElementById("q-"+q.id);
+    const a = state.ans[q.id] || {c:null,r:"",s:false,g:null};
+    const study = state.mode==="study";
+    const done = study || a.s;
+    art.querySelectorAll(".opt").forEach(b=>{
+      const i=+b.dataset.i;
+      b.disabled = done;
+      b.classList.toggle("sel", !done && a.c===i);
+      b.classList.toggle("right", done && i===q.a);
+      b.classList.toggle("wrong", !study && a.s && a.c===i && i!==q.a);
+      b.classList.toggle("show-note", done && i!==q.a);
+      b.setAttribute("aria-pressed", String(a.c===i));
+    });
+    const ta = art.querySelector("textarea");
+    if(document.activeElement!==ta) ta.value = a.r || "";
+    ta.readOnly = a.s;
+    art.querySelector(".reason").hidden = study || a.s;
+    art.querySelector(".ask").hidden = done;
+    const sub = art.querySelector(".submit");
+    sub.disabled = a.c===null;
+    sub.textContent = a.c===null ? "เลือกคำตอบก่อนส่ง" : (a.r.trim() ? "ส่งคำตอบข้อนี้" : "ส่ง (ยังไม่มีเหตุผล = 0 คะแนน)");
+    art.querySelector(".ans").hidden = !done;
+    const letter = LETTERS[q.order.indexOf(q.a)];
+    const v = art.querySelector(".verdict"), g = art.querySelector(".grade"), mine = art.querySelector(".mine");
+    art.querySelector(".minewrap").hidden = study || !a.s;
+    art.querySelector(".done").hidden = study || !a.s;
+    mine.textContent = a.r && a.r.trim() ? a.r : "(ไม่ได้เขียนเหตุผล)";
+    const p = study ? null : points(q);
+    if(study || !a.s){ v.className="verdict"; v.textContent=`คำตอบ: ${letter}`; g.innerHTML=""; }
+    else if(a.c!==q.a){ v.className="verdict no"; v.textContent=`เลือกผิด · คำตอบที่ถูกคือ ${letter} · ได้ 0 คะแนน`; g.innerHTML=""; }
+    else if(!a.r.trim()){ v.className="verdict no"; v.textContent=`เลือกถูก (${letter}) แต่ไม่มีเหตุผล · ได้ 0 คะแนนตามกติกา`; g.innerHTML=""; }
+    else {
+      v.className="verdict ok"; v.textContent=`เลือกถูก (${letter}) · เทียบเหตุผลของคุณกับประเด็นด้านบนแล้วให้คะแนนตัวเอง`;
+      g.innerHTML = `<button class="btn yes" data-g="1" aria-pressed="${a.g===true}">เหตุผลครบประเด็น · 2 คะแนน</button><button class="btn no" data-g="0" aria-pressed="${a.g===false}">ขาดหรือผิดประเด็น · 0 คะแนน</button>`;
+    }
+    const badge = art.querySelector(".pts");
+    badge.hidden = p===null;
+    if(p!==null){ badge.className = "pts " + (p==="w"?"pw":p===2?"p2":"p0"); badge.textContent = p==="w" ? "รอให้คะแนน" : `${p}/2`; }
+  }
+
+  function visible(q){
+    const f=state.filter, p=points(q);
+    if(f==="all") return true;
+    if(f==="todo") return p===null;
+    if(f==="pending") return p==="w";
+    if(f==="zero") return p===0;
+    return q.t===f;
+  }
+  function paintFilter(){
+    let n=0;
+    QUESTIONS.forEach(q=>{ const show=visible(q); document.getElementById("q-"+q.id).hidden=!show; if(show) n++; });
+    document.querySelectorAll(".qsec").forEach(h=>{ h.hidden = !QUESTIONS.some(q=>q.t===h.dataset.t && visible(q)); });
+    document.querySelectorAll("#filters .chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.f===state.filter)));
+    let empty = $("#qempty");
+    if(!n){ if(!empty){ empty=document.createElement("p"); empty.id="qempty"; empty.className="empty"; list.appendChild(empty);}
+      empty.textContent = {todo:"ทำครบทุกข้อแล้ว",pending:"ไม่มีข้อที่รอให้คะแนน",zero:"ยังไม่มีข้อที่ได้ 0 คะแนน"}[state.filter] || "ไม่มีข้อในหมวดนี้"; empty.hidden=false; }
+    else if(empty) empty.hidden=true;
+  }
+  function paintScore(){
+    const per={}; Object.keys(TOPIC).forEach(k=>per[k]={n:0,done:0,pts:0,w:0});
+    QUESTIONS.forEach(q=>{ const p=points(q), r=per[q.t]; r.n++; if(p===null) return; r.done++; if(p==="w") r.w++; else r.pts+=p; });
+    let tot={n:0,done:0,pts:0,w:0};
+    $("#scoreTable").innerHTML = Object.entries(per).map(([k,r])=>{
+      tot.n+=r.n; tot.done+=r.done; tot.pts+=r.pts; tot.w+=r.w;
+      return `<tr><td>${TOPIC[k].no}.</td><td><b style="color:${TOPIC[k].c}">${TOPIC[k].name}</b> (${r.n} ข้อ ${r.n*2} คะแนน)</td><td>${r.done}/${r.n}</td><td>${r.pts}${r.w?` <small>(+รอ ${r.w})</small>`:""}</td></tr>`;
+    }).join("") + `<tr class="total"><td>รวม</td><td>${tot.n*2} คะแนน</td><td>${tot.done}/${tot.n}</td><td>${tot.pts}/${tot.n*2}</td></tr>`;
+    document.querySelectorAll(".qsec").forEach(h=>{ const r=per[h.dataset.t]; h.querySelector("span").textContent = `ทำแล้ว ${r.done}/${r.n} · ได้ ${r.pts}/${r.n*2}`; });
+    $("#score").innerHTML = `<span>ส่งแล้ว <b class="num">${tot.done}</b>/${tot.n}</span><span>รอให้คะแนน <b class="num">${tot.w}</b></span><span class="big">คะแนน <b class="num">${tot.pts}</b>/${tot.n*2}</span>`;
+    const pill=$("#pill");
+    if(state.mode==="exam" && tot.done>0){ pill.hidden=false; pill.innerHTML=`คะแนน <b>${tot.pts}</b>/${tot.n*2}${tot.w?` · รอ ${tot.w}`:""}`; } else pill.hidden=true;
+    if(["todo","pending","zero"].includes(state.filter)) paintFilter();
+  }
+
+  let lastT=null;
+  QUESTIONS.forEach(q=>{
+    if(q.t!==lastT){ lastT=q.t; const t=TOPIC[q.t]; const n=QUESTIONS.filter(x=>x.t===q.t).length;
+      const h=document.createElement("h3"); h.className="qsec"; h.dataset.t=q.t; h.style.setProperty("--c",t.c);
+      h.innerHTML=`${t.no}. ${t.name} (${n} ข้อ ${n*2} คะแนน)<span></span>`; list.appendChild(h); }
+    list.appendChild(renderQ(q));
+  });
+  $("#mode").value = state.mode;
+  QUESTIONS.forEach(paintQ); paintFilter(); paintScore();
+
+  $("#filters").addEventListener("click",e=>{ const c=e.target.closest(".chip"); if(!c) return; state.filter=c.dataset.f; save(); paintFilter(); });
+  $("#mode").addEventListener("change",e=>{ state.mode=e.target.value; save(); QUESTIONS.forEach(paintQ); paintScore(); });
+  let armed=null;
+  $("#reset").addEventListener("click",e=>{
+    const b=e.currentTarget;
+    if(!armed){ b.textContent="กดอีกครั้งเพื่อยืนยัน"; armed=setTimeout(()=>{armed=null;b.textContent="ล้างคำตอบทั้งหมด";},3000); return; }
+    clearTimeout(armed); armed=null; b.textContent="ล้างคำตอบทั้งหมด";
+    state.ans={}; save(); document.querySelectorAll(".reason textarea").forEach(t=>t.value=""); QUESTIONS.forEach(paintQ); paintFilter(); paintScore();
+  });
+})();
+</script>
+</body>
+</html>
